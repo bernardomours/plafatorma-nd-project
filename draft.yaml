@@ -1,0 +1,60 @@
+models:
+  Patient:
+    name: string
+    birth_date: date
+    cpf: string unique
+    guardian_name: string
+    guardian_phone: string
+    relationships:
+      belongsTo: Unit
+      hasMany: Appointment, RequestedService
+
+  Professional:
+    name: string
+    cpf: string unique
+    phone: string
+    birth_date: date
+    register_number: string nullable # CRP, CRM, etc.
+    relationships:
+      hasMany: Appointment
+      belongsTo: Therapy
+
+  Unit:
+    name: string
+    cpnj: string unique
+    street: string
+    neighborhood: string
+    number: string
+    relationships:
+      hasMany: Professional, Patient, Appointment
+
+  Therapy:
+    name: string
+    relationships:
+      hasMany: Appointment, RequestedService
+
+  RequestedService:
+    service_type: string       # Tipo Atendimento
+    month_year: string         # Mês/Ano
+    requisition_number: string nullable # Requisição
+    requested_hours: time    # CH Solicitada
+    approved_hours: time     # CH Liberada
+    planned_hours: time     # CH Planejada
+    relationships:
+      belongsTo: Patient, Therapy
+
+  Appointment:
+    appointment_date: date    # Data
+    check_in: time nullable   # Check-in
+    check_out: time nullable  # Check-out
+    service_type: string      # Tipo de Atendimento
+    session_number: integer nullable # Sessões (Contagem)
+    relationships:
+      belongsTo: Patient, Professional, Therapy, Unit
+
+  Schedule:
+    day_of_week: string
+    start_time: time
+    end_time: time
+    relationships:
+      belongsTo: Patient, Professional, Therapy, Unit

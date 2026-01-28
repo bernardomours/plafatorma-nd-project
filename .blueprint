@@ -1,0 +1,31 @@
+created:
+    - database/factories/PatientFactory.php
+    - database/factories/ProfessionalFactory.php
+    - database/factories/UnitFactory.php
+    - database/factories/TherapyFactory.php
+    - database/factories/RequestedServiceFactory.php
+    - database/factories/AppointmentFactory.php
+    - database/factories/ScheduleFactory.php
+    - database/migrations/2026_01_23_190533_create_patients_table.php
+    - database/migrations/2026_01_23_190534_create_professionals_table.php
+    - database/migrations/2026_01_23_190535_create_units_table.php
+    - database/migrations/2026_01_23_190536_create_therapies_table.php
+    - database/migrations/2026_01_23_190537_create_requested_services_table.php
+    - database/migrations/2026_01_23_190538_create_appointments_table.php
+    - database/migrations/2026_01_23_190539_create_schedules_table.php
+    - app/Models/Patient.php
+    - app/Models/Professional.php
+    - app/Models/Unit.php
+    - app/Models/Therapy.php
+    - app/Models/RequestedService.php
+    - app/Models/Appointment.php
+    - app/Models/Schedule.php
+models:
+    Appointment: { appointment_date: date, check_in: 'time nullable', check_out: 'time nullable', service_type: string, session_number: 'integer nullable', relationships: { belongsTo: 'Patient, Professional, Therapy, Unit' } }
+    Patient: { name: string, birth_date: date, cpf: 'string unique', guardian_name: string, guardian_phone: string, relationships: { belongsTo: Unit, hasMany: 'Appointment, RequestedService' } }
+    Professional: { name: string, cpf: 'string unique', phone: string, birth_date: date, register_number: 'string nullable', relationships: { hasMany: Appointment, belongsTo: Therapy } }
+    RequestedService: { service_type: string, month_year: string, requisition_number: 'string nullable', requested_hours: time, approved_hours: time, planned_hours: time, relationships: { belongsTo: 'Patient, Therapy' } }
+    Schedule: { day_of_week: string, start_time: time, end_time: time, relationships: { belongsTo: 'Patient, Professional, Therapy, Unit' } }
+    Therapy: { name: string, relationships: { hasMany: 'Appointment, RequestedService' } }
+    Unit: { name: string, cpnj: 'string unique', street: string, neighborhood: string, number: string, relationships: { hasMany: 'Professional, Patient, Appointment' } }
+    User: { name: string, email: string, email_verified_at: 'datetime nullable', password: string, remember_token: 'string nullable' }
