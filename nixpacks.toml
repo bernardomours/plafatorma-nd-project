@@ -1,12 +1,13 @@
 [phases.setup]
 nixpacksArchive = ["php82"]
-# Instala as bibliotecas do sistema (Linux) necessárias para as extensões
-aptPkgs = ["libicu-dev", "libzip-dev"] 
+# Instala as bibliotecas do sistema Linux necessárias
+aptPkgs = ["libicu-dev", "libzip-dev", "zlib1g-dev"]
 
 [phases.install]
+# Força a instalação das extensões e ignora a trava do lock file temporariamente
 cmds = [
-    "docker-php-ext-install intl zip", 
-    "composer install --optimize-autoloader --no-interaction"
+    "docker-php-ext-install intl zip",
+    "composer install --optimize-autoloader --no-interaction --ignore-platform-req=ext-intl --ignore-platform-req=ext-zip"
 ]
 
 [phases.build]
