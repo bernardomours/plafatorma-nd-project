@@ -1,11 +1,12 @@
 [phases.setup]
 nixpacksArchive = ["php82"]
-aptPkgs = ["libicu-dev"]
+# Instala as bibliotecas do sistema (Linux) necessárias para as extensões
+aptPkgs = ["libicu-dev", "libzip-dev"] 
 
 [phases.install]
 cmds = [
-    "docker-php-ext-install intl", 
-    "composer install --optimize-autoloader --no-interaction --ignore-platform-req=ext-intl"
+    "docker-php-ext-install intl zip", 
+    "composer install --optimize-autoloader --no-interaction"
 ]
 
 [phases.build]
