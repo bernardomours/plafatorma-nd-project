@@ -1,0 +1,9 @@
+[phases.setup]
+nixpacksArchive = ["php82"]
+aptPkgs = ["libicu-dev"]
+
+[phases.install]
+cmds = ["docker-php-ext-install intl", "composer install --optimize-autoloader --no-interaction"]
+
+[phases.build]
+cmds = ["php artisan optimize"]
