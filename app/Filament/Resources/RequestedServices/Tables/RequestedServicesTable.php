@@ -27,7 +27,7 @@ class RequestedServicesTable
                     ->searchable(),
                 TextColumn::make('month_year')
                     ->label('Mês/Ano')
-                    ->date()
+                    ->date('F \\d\\e Y')
                     ->sortable(),
                 TextColumn::make('requisition_number')
                     ->label('Requisição')

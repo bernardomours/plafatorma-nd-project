@@ -21,7 +21,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup;
 use App\Filament\Widgets\BirthdayGreetings;
-use App\Filament\Widgets\BirthdayGreetingsProfessionals;
+use App\Filament\Widgets\BirthdayGreetingsStaff;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets;
 
@@ -48,20 +48,20 @@ class AdminPanelProvider extends PanelProvider
                 'Administração',
             ])
             
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->resources([
                 AgreementResource::class,
             ])
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 // AccountWidget::class,
                 // FilamentInfoWidget::class,
                 BirthdayGreetings::class,
-                BirthdayGreetingsProfessionals::class,
+                BirthdayGreetingsStaff::class,
             ])
             ->middleware([
                 EncryptCookies::class,

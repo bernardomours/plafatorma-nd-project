@@ -14,7 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\CreateAction;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\ToggleColumn;
-
+use Filament\Tables\Columns\Summarizers\Sum;
 
 class PatientServices extends Page implements HasTable
 {
@@ -63,15 +63,18 @@ class PatientServices extends Page implements HasTable
                 TextColumn::make('requisition_number')
                     ->label('REQUISIÇÃO'),
                 TextColumn::make('requested_hours')
-                    ->label('CH SOLICITADA'),
+                    ->label('CH SOLICITADA')
+                    ->summarize(Sum::make()->label('Total')),
                 TextColumn::make('approved_hours')
                     ->label('CH LIBERADA')
                     ->badge()
-                    ->color('success'),
+                    ->color('success')
+                    ->summarize(Sum::make()->label('Total')),
                 TextColumn::make('planned_hours')
                     ->label('CH PLANEJADA')
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->summarize(Sum::make()->label('Total')),
             ])
             ->headerActions([
                 CreateAction::make()

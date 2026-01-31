@@ -1,14 +1,27 @@
+# Configuração do ambiente PHP e dependências de sistema
 [phases.setup]
-nixpacksArchive = ["php82"]
-# Instala as bibliotecas do sistema Linux necessárias
-aptPkgs = ["libicu-dev", "libzip-dev", "zlib1g-dev"]
+nixpacksArchive = ["php82", "nodejs_20"]
+# Instala as bibliotecas do sistema Linux necessárias para as extensões do PHP
+aptPkgs = ["libicu-dev", "libzip-dev", "unzip"]
 
+# Instalação das dependências do projeto
 [phases.install]
-# Força a instalação das extensões e ignora a trava do lock file temporariamente
 cmds = [
+    # Instala e habilita as extensões do PHP
     "docker-php-ext-install intl zip",
-    "composer install --optimize-autoloader --no-interaction --ignore-platform-req=ext-intl --ignore-platform-req=ext-zip"
+    # Instala as dependências do Composer para produção
+    "composer install --optimize-autoloader --no-interaction --no-dev",
+    # Instala as dependências do NPM
+    "npm install"
 ]
 
+# Build dos assets e otimizações do Laravel
 [phases.build]
-cmds = ["php artisan optimize"]
+cmds = [
+    "npm run build",
+    "php artisan optimize"
+]
+
+# Comando para iniciar a aplicação
+[start]
+cmd = "php artisan serve --host 0.0.0.0 --port $PORT"

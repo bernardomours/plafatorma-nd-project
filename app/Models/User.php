@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'unit_id',
         'is_admin',
+        'birth_date',
     ];
 
     /**

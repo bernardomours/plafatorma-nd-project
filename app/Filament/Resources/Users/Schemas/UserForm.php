@@ -7,6 +7,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DatePicker;
+
 
 class UserForm
 {
@@ -18,6 +20,10 @@ class UserForm
                     ->label('Nome')
                     ->required(),
 
+                DatePicker::make('birth_date')
+                    ->label('Data de Nascimento')
+                    ->required(),
+
                 TextInput::make('email')
                     ->label('E-mail')
                     ->email()
@@ -25,7 +31,7 @@ class UserForm
 
                 Select::make('unit_id')
                     ->label('Unidade')
-                    ->relationship('unit', 'name') // Agora o Eloquent encontrará este método 'unit()'
+                    ->relationship('unit', 'city') 
                     ->placeholder('Acesso Global (Admin)')
                     ->searchable()
                     ->preload(),
@@ -33,7 +39,6 @@ class UserForm
                 TextInput::make('password')
                     ->label('Senha')
                     ->password()
-                    // Obrigatório apenas ao criar; ao editar, se ficar vazio, mantém a senha atual
                     ->required(fn (string $context): bool => $context === 'create') 
                     ->dehydrated(fn ($state) => filled($state)),
 
