@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('street');
             $table->string('neighborhood');
             $table->string('number');
+            $table->string('city');
             $table->timestamps();
         });
     }

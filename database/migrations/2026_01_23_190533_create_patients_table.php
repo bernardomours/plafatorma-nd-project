@@ -19,7 +19,10 @@ return new class extends Migration
             $table->string('guardian_name');
             $table->string('guardian_phone');
             $table->foreignId('unit_id');
+            $table->foreignId('agreement_id')->constrained('agreements')->nullOnDelete();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
+            
         });
     }
 

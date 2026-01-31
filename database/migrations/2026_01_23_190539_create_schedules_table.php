@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('patient_id');
             $table->foreignId('professional_id');
             $table->foreignId('therapy_id');
-            $table->foreignId('unit_id');
+            $table->string('type_therapy');
             $table->timestamps();
         });
     }

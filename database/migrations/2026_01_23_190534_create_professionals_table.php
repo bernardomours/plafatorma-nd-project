@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('birth_date');
             $table->string('register_number')->nullable();
             $table->foreignId('therapy_id');
+            $table->foreignId('unit_id')->nullable()->constrained('units')->nullOnDelete();
             $table->timestamps();
         });
     }
