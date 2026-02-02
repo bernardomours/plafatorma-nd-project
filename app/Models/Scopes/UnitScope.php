@@ -2,6 +2,7 @@
 
 namespace App\Models\Scopes;
 
+use App\Models\Appointment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -11,17 +12,28 @@ class UnitScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        // Adicione esta linha temporariamente para testar:
-        // dd('O Scope está sendo chamado!'); 
-
         $user = Auth::user();
 
-        // Verifique se o nome da coluna no seu banco é exatamente 'is_admin'
-        // Se no seu banco for 'role' ou outro nome, ele sempre retornará false e não filtrará
-        if (! $user || $user->is_admin) { 
+        if (! $user || $user->is_admin) {
             return;
         }
 
-        $builder->where($model->getTable() . '.unit_id', $user->unit_id);
-}
+        $mossoroUnitId = 1;
+
+        if ($model instanceof Appointment) {
+            $builder->whereHas('patient', function (Builder $query) use ($user, $mossoroUnitId) {
+                if ((int)$user->unit_id === $mossoroUnitId) {
+                    $query->where('unit_id', $mossoroUnitId);
+                } else {
+                    $query->where('unit_id', '!=', $mossoroUnitId);
+                }
+            });
+        } else {
+            if ((int)$user->unit_id === $mossoroUnitId) {
+                $builder->where($model->getTable() . '.unit_id', $mossoroUnitId);
+            } else {
+                $builder->where($model->getTable() . '.unit_id', '!=', $mossoroUnitId);
+            }
+        }
+    }
 }
