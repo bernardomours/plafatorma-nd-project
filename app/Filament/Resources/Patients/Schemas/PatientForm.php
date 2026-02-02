@@ -45,9 +45,8 @@ class PatientForm
                     )
                     ->searchable()
                     ->preload()
-                    ->live() // Faz com que o campo reaja a mudanças na Unidade
+                    ->live()
                     ->required()
-                    //->helperText('Apenas convênios vinculados à unidade selecionada serão exibidos.'),
             ]);
     }
 }

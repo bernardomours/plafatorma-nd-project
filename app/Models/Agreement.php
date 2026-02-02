@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Agreement extends Model
 {
@@ -17,5 +18,10 @@ class Agreement extends Model
     public function units(): BelongsToMany
     {
         return $this->belongsToMany(Unit::class);
+    }
+
+    public function forwardings(): HasMany
+    {
+        return $this->hasMany(Forwarded::class);
     }
 }

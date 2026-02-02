@@ -24,7 +24,7 @@ class TherapyResource extends Resource
     protected static ?string $modelLabel = 'Terapia';
     protected static ?string $pluralModelLabel = 'Terapias';
     protected static ?string $navigationLabel = 'Terapias';
-    protected static string|UnitEnum|null $navigationGroup = 'Frequência';
+    protected static string|UnitEnum|null $navigationGroup = 'Serviços';
 
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

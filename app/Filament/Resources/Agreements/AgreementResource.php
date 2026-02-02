@@ -25,7 +25,7 @@ class AgreementResource extends Resource
     protected static ?string $modelLabel = 'Convênio';
     protected static ?string $pluralModelLabel = 'Convênios';
     protected static ?string $navigationLabel = 'Convênios';
-    protected static string|UnitEnum|null $navigationGroup = 'Frequência';
+    protected static string|UnitEnum|null $navigationGroup = 'Serviços';
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document';
 
     public static function form(Schema $schema): Schema
