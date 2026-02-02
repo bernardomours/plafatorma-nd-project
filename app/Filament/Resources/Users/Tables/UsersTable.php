@@ -22,7 +22,7 @@ class UsersTable
                     ->label('Email')
                     ->label('Email address')
                     ->searchable(),
-                TextColumn::make('unit.name')
+                TextColumn::make('unit.city')
                     ->label('Unidade')
                     ->numeric()
                     ->sortable(),
