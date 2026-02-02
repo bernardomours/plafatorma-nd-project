@@ -46,9 +46,7 @@ class PatientSchedule extends Page implements HasForms, HasActions
 
     public function getSchedules()
     {
-        return Schedule::where('patient_id', $this->getPatient()->id)
-            ->with(['therapy', 'professional'])
-            ->get();
+        return $this->getPatient()->schedules()->with(['therapy', 'professional'])->get();
     }
     
 

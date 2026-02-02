@@ -22,6 +22,9 @@ class PatientsTable
                 TextColumn::make('cpf')
                     ->label('CPF')
                     ->searchable(),
+                TextColumn::make('agreement_number')
+                    ->label('Carteira')
+                    ->searchable(),
                 TextColumn::make('birth_date')
                     ->label('Data de Nascimento')
                     ->date('d/m/Y')

@@ -3,6 +3,8 @@
 namespace App\Models\Scopes;
 
 use App\Models\Appointment;
+use App\Models\RequestedService;
+use App\Models\Schedule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -20,7 +22,13 @@ class UnitScope implements Scope
 
         $mossoroUnitId = 1;
 
-        if ($model instanceof Appointment) {
+        $modelClass = get_class($model);
+
+        if (
+            $modelClass === Appointment::class ||
+            $modelClass === RequestedService::class ||
+            $modelClass === Schedule::class
+        ) {
             $builder->whereHas('patient', function (Builder $query) use ($user, $mossoroUnitId) {
                 if ((int)$user->unit_id === $mossoroUnitId) {
                     $query->where('unit_id', $mossoroUnitId);

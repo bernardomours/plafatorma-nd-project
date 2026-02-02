@@ -23,6 +23,9 @@ class PatientForm
                     ->label('CPF')
                     ->required()
                     ->helperText('Coloque apenas os dígitos'),
+                TextInput::make('agreement_number')
+                    ->label('Carteira')
+                    ->required(),
                 TextInput::make('guardian_name')
                     ->label('Nome do Responsável')
                     ->required(),

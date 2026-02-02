@@ -25,7 +25,8 @@ class Patient extends Model
         'guardian_phone',
         'unit_id',
         'agreement_id',
-        'is_active'
+        'is_active',
+        'agreement_number'
     ];
 
     /**
@@ -65,5 +66,10 @@ class Patient extends Model
     public function requestedServices(): HasMany
     {
         return $this->hasMany(RequestedService::class);
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
     }
 }
