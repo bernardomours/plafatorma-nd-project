@@ -28,11 +28,11 @@ class Appointment extends Model
         'appointment_date',
         'check_in',
         'check_out',
-        'service_type',
         'session_number',
         'patient_id',
         'professional_id',
         'therapy_id',
+        'service_type_id',
     ];
 
     /**
@@ -48,6 +48,7 @@ class Appointment extends Model
             'patient_id' => 'integer',
             'professional_id' => 'integer',
             'therapy_id' => 'integer',
+            'service_type_id' => 'integer',
         ];
     }
 
@@ -69,5 +70,10 @@ class Appointment extends Model
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function serviceType(): BelongsTo
+    {
+        return $this->belongsTo(ServiceType::class);
     }
 }

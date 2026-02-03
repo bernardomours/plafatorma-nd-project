@@ -22,7 +22,7 @@ class RequestedServicesTable
                     ->label('Terapia')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('service_type')
+                TextColumn::make('serviceType.name')
                     ->label('Tipo de Atendimento')
                     ->searchable(),
                 TextColumn::make('month_year')

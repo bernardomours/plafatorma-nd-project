@@ -21,11 +21,16 @@ class ForwardedsTable
                     ->label('Data')
                     ->date('d/m/Y')
                     ->sortable(),
-                TextColumn::make('city')
-                    ->label('Cidade')
+                TextColumn::make('unit.city')
+                    ->label('Unidade')
                     ->searchable(),
                 TextColumn::make('status')
-                    ->searchable(),
+                    ->searchable()
+                    ->html(),
+                TextColumn::make('status_return')
+                    ->label('Retorno sobre encaminhamento')
+                    ->searchable()
+                    ->html(),
                 TextColumn::make('agreement.name')
                     ->label('Convênio') 
                     ->searchable(),

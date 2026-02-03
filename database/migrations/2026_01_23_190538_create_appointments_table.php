@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('appointment_date');
             $table->time('check_in')->nullable();
             $table->time('check_out')->nullable();
-            $table->string('service_type');
+            $table->foreignId('service_type_id');
             $table->integer('session_number')->nullable();
             $table->foreignId('patient_id');
             $table->foreignId('professional_id');

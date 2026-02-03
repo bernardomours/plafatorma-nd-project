@@ -6,6 +6,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\Therapy;
 use App\Models\Agreement;
+use App\Models\ServiceType;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
@@ -51,6 +52,16 @@ class DatabaseSeeder extends Seeder
 
         foreach ($convenios as $convenio) {
             Agreement::create($convenio);
+        }
+
+        $tipos_terapias = [
+            ['name' => 'Clínica'],
+            ['name' => 'Escolar'],
+            ['name' => 'Domiciliar'],
+        ];
+
+        foreach ($tipos_terapias as $tipo_terapia) {
+            ServiceType::create($tipo_terapia);
         }
 
         Unit::factory()->create([

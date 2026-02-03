@@ -6,6 +6,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Filament\Forms\Components\RichEditor;
 
 class ForwardedForm
 {
@@ -19,17 +20,17 @@ class ForwardedForm
                 DatePicker::make('forwarding_date')
                     ->label('Data')
                     ->required(),
-                Select::make('city')
-                    ->label('Cidade')
-                    ->options([
-                        'mossoro' => 'Mossoró',
-                        'natal' => 'Natal',
-                        'joao-camara' => 'João Câmara',
-                        'santa-cruz' => 'Santa Cruz',
-                    ])
+                Select::make('unit_id')
+                    ->label('Unidade')
+                    ->relationship('unit', 'city')
+                    ->searchable()
+                    ->preload()
                     ->required(),
-                TextInput::make('status')
+                RichEditor::make('status')
                     ->required(),
+                RichEditor::make('status_return')
+                ->label('Retorno sobre encaminhamento')
+                ->helperText('Este campo será preenchido após resultado do encaminhamento'),
                 Select::make('agreement_id')
                     ->label('Convênio')
                     ->relationship('agreement', 'name')

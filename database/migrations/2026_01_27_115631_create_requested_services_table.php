@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('requested_services', function (Blueprint $table) {
             $table->id();
-            $table->string('service_type');
+            $table->foreignId('service_type_id');
             $table->date('month_year');
             $table->string('requisition_number')->nullable();
             $table->decimal('requested_hours', 8, 2);

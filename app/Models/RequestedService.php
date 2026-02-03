@@ -11,7 +11,6 @@ class RequestedService extends Model
     use HasFactory;
 
     protected $fillable = [
-        'service_type',
         'month_year',
         'requisition_number',
         'requested_hours',
@@ -19,6 +18,7 @@ class RequestedService extends Model
         'planned_hours',
         'patient_id',
         'therapy_id',
+        'service_type_id',
     ];
 
     protected $casts = [
@@ -26,6 +26,7 @@ class RequestedService extends Model
         'requested_hours' => 'decimal:2',
         'approved_hours' => 'decimal:2',
         'planned_hours' => 'decimal:2',
+        'service_type_id' => 'integer',
     ];
 
     public function patient(): BelongsTo
@@ -41,5 +42,10 @@ class RequestedService extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new \App\Models\Scopes\UnitScope);
+    }
+
+    public function serviceType(): BelongsTo
+    {
+        return $this->belongsTo(ServiceType::class);
     }
 }

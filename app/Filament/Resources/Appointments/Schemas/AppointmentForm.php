@@ -90,13 +90,10 @@ class AppointmentForm
                     ->required()
                     ->live()
                     ->afterStateUpdated($updateSessionNumber),
-                Select::make('service_type')
+                Select::make('service_type_id')
                     ->label('Tipo de Atendimento')
-                    ->options([
-                        'clinica' => 'Clínica',
-                        'escolar' => 'Escolar',
-                        'domiciliar' => 'Domiciliar',
-                    ]),
+                    ->relationship('serviceType', 'name')
+                    ->required(),
                 Select::make('professional_id')
                     ->label('Profissional')
                     ->relationship('professional', 'name')

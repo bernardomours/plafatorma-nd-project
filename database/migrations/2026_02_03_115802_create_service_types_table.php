@@ -11,14 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('forwarded', function (Blueprint $table) {
+        Schema::create('service_types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->date('forwarding_date');
-            $table->foreignId('unit_id')->constrained('units')->onDelete('restrict');
-            $table->string('status');
-            $table->string('status_return')->nullable();
-            $table->foreignId('agreement_id')->nullable()->constrained('agreements')->onDelete('restrict');
             $table->timestamps();
         });
     }
@@ -28,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('forwarded');
+        Schema::dropIfExists('service_types');
     }
 };

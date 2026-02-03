@@ -56,4 +56,9 @@ class Unit extends Model
     {
         return $this->belongsToMany(Agreement::class);
     }
+
+    public function forwardings(): HasMany
+    {
+        return $this->hasMany(Forwarded::class);
+    }
 }

@@ -55,7 +55,7 @@ class PatientServices extends Page implements HasTable
                 TextColumn::make('therapy.name')
                     ->label('TERAPIA')
                     ->weight('bold'),
-                TextColumn::make('service_type')
+                TextColumn::make('serviceType.name')
                     ->label('TIPO ATENDIMENTO'),
                 TextColumn::make('month_year')
                     ->label('MÊS/ANO')

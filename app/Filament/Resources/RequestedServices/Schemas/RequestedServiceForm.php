@@ -16,13 +16,9 @@ class RequestedServiceForm
                 ->label('Terapia')
                 ->relationship('therapy', 'name')
                 ->required(),
-            Select::make('service_type')
+            Select::make('service_type_id')
                 ->label('Tipo de Atendimento')
-                ->options([
-                    'clinica' => 'Clínica',
-                    'escolar' => 'Escolar',
-                    'domiciliar' => 'Domiciliar',
-                ])
+                ->relationship('serviceType', 'name')
                 ->required(),
             Select::make('month_year')
                 ->label('Mês/Ano')

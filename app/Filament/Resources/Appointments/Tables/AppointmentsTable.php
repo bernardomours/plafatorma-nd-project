@@ -2,11 +2,8 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 
 class AppointmentsTable
 {
@@ -24,7 +21,7 @@ class AppointmentsTable
                 TextColumn::make('therapy.name')
                     ->label('Terapia')
                     ->searchable(),
-                TextColumn::make('service_type')
+                TextColumn::make('serviceType.name')
                     ->label('Tipo de Atendimento')
                     ->searchable(),
                 TextColumn::make('session_number')
@@ -44,25 +41,14 @@ class AppointmentsTable
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Registrado em')
-                    ->dateTime()
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->label('Última atualização')
-                    ->dateTime()
+                    ->label('Atualizado em')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                //
-            ])
-            ->recordActions([
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }
