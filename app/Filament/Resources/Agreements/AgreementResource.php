@@ -52,6 +52,7 @@ class AgreementResource extends Resource
         })->toArray();
 
         return $table
+            ->recordUrl(null)
             ->columns(array_merge([
                 TextColumn::make('name')
                     ->label('Convênio')

@@ -37,6 +37,7 @@ class TherapyResource extends Resource
     public static function table(Table $table): Table
 {
     return $table
+        ->recordUrl(null) #desabilita a edição quando clica na linha da tabela
         ->columns(array_merge(
             [
                 TextColumn::make('name')
