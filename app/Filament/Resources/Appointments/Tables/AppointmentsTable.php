@@ -42,10 +42,12 @@ class AppointmentsTable
                 TextColumn::make('created_at')
                     ->label('Registrado em')
                     ->dateTime('d/m/Y H:i')
+                    ->timezone('America/Fortaleza')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->label('Atualizado em')
+                    ->timezone('America/Fortaleza')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

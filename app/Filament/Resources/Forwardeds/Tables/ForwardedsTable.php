@@ -38,10 +38,12 @@ class ForwardedsTable
                     ->label('Criado em')
                     ->dateTime()
                     ->sortable()
+                    ->timezone('America/Fortaleza')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
+                    ->timezone('America/Fortaleza')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

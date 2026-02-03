@@ -45,10 +45,12 @@ class PatientsTable
                     ->searchable(),
                 TextColumn::make('created_at')
                     ->dateTime()
+                    ->timezone('America/Fortaleza')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->dateTime()
+                    ->timezone('America/Fortaleza')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 ToggleColumn::make('is_active')

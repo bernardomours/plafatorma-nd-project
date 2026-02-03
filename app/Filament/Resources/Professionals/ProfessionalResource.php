@@ -20,13 +20,13 @@ class ProfessionalResource extends Resource
     protected static ?string $model = Professional::class;
 
 
-    protected static string|UnitEnum|null $navigationGroup = 'Administração';
+    protected static string|UnitEnum|null $navigationGroup = 'Frequência';
 
     protected static ?string $modelLabel = 'Profissional';
     protected static ?string $pluralModelLabel = 'Profissionais';
     protected static ?string $navigationLabel = 'Profissionais';
     
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user-circle';
 
     public static function form(Schema $schema): Schema
     {
@@ -45,11 +45,11 @@ class ProfessionalResource extends Resource
         ];
     }
 
-    public static function canViewAny(): bool
-    {
-        // Verifica a coluna 'is_admin' que você criou na migration
-        return auth()->user()?->is_admin ?? false;
-    }
+    // public static function canViewAny(): bool
+    // {
+    //     // Verifica a coluna 'is_admin' que você criou na migration
+    //     return auth()->user()?->is_admin ?? false;
+    // }
 
     public static function getPages(): array
     {

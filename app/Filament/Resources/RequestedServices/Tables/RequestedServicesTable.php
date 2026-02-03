@@ -46,11 +46,13 @@ class RequestedServicesTable
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Data de registro')
+                    ->timezone('America/Fortaleza')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->label('Última atualização')
+                    ->timezone('America/Fortaleza')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

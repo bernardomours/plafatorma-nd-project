@@ -38,11 +38,13 @@ class ProfessionalsTable
                     ->searchable(),    
                 TextColumn::make('created_at')
                     ->label('Registrado em')
+                    ->timezone('America/Fortaleza')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->label('Última Atualização')
+                    ->timezone('America/Fortaleza')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

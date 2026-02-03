@@ -25,10 +25,14 @@ class UnitsTable
                 TextColumn::make('number')
                     ->searchable(),
                 TextColumn::make('created_at')
+                    ->label('Cadastrada em')
+                    ->timezone('America/Fortaleza')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Última atualização')
+                    ->timezone('America/Fortaleza')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
