@@ -71,16 +71,7 @@ class AgreementResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with('units');
-        $user = auth()->user();
-
-        if (! $user->is_admin) {
-            return $query->whereHas('units', function ($q) use ($user) {
-                $q->where('units.id', $user->unit_id);
-            });
-        }
-
-        return $query;
+        return parent::getEloquentQuery()->with('units');
     }
 
     public static function getPages(): array
