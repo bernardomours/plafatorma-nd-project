@@ -29,6 +29,11 @@ class ProfessionalsTable
                     ->sortable(),
                 TextColumn::make('register_number')
                     ->label('Número de Registro')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable(),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
                 TextColumn::make('therapy.name')
                     ->label('Especialidade')

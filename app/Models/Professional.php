@@ -23,6 +23,7 @@ class Professional extends Model
         'birth_date',
         'register_number',
         'therapy_id',
+        'email',
     ];
 
     /**

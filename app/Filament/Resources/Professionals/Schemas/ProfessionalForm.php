@@ -28,7 +28,9 @@ class ProfessionalForm
                     ->label('Data de Nascimento')
                     ->required(),
                 TextInput::make('register_number')
-                ->label('Número de Registro'),
+                    ->label('Número de Registro'),
+                TextInput::make('email')
+                    ->label('Email'),
                 Select::make('therapy_id')
                     ->label('Especialidade')
                     ->relationship('therapy', 'name')
