@@ -14,8 +14,8 @@ class AppointmentForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $updateSessionNumber = function (callable $set, callable $get) {
-            $checkIn = $get('check_in');
+        $updateSessionNumber = function (callable $set, callable $get) { #função que calcula automaticamente as sessoes
+            $checkIn = $get('check_in');                                 #de uma consulta pelo checkin e checkout
             $checkOut = $get('check_out');
 
             if (empty($checkIn) || empty($checkOut)) {
@@ -97,7 +97,10 @@ class AppointmentForm
                 Select::make('professional_id')
                     ->label('Profissional')
                     ->relationship('professional', 'name')
-                    ->required(),
+                    ->required()
+                    ->preload()
+                    ->searchable()
+                    ->live(),
                 TextInput::make('session_number') #preenchido automaticamente
                     ->label('Qtd de Sessões')
                     ->numeric()

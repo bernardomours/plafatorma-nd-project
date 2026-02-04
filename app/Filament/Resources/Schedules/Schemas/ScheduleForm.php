@@ -25,17 +25,22 @@ class ScheduleForm
                 ->required(),
             TimePicker::make('start_time')
                 ->label('Hora de Início')
+                ->seconds(false)
                 ->required(),
             TimePicker::make('end_time')
                 ->label('Hora de Fim')
+                ->seconds(false)
                 ->required(),
             Select::make('professional_id')
+                ->label('Profissional')
                 ->relationship('professional', 'name')
                 ->required(),
             Select::make('therapy_id')
+                ->label('Teapia')
                 ->relationship('therapy', 'name')
                 ->required(),
             Select::make('type_therapy')
+                ->label('Tipo de Atendimento')
                 ->options([
                     'clinica' => 'Clínica',
                     'escolar' => 'Escolar',
