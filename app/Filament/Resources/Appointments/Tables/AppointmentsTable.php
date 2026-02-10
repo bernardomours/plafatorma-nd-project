@@ -4,6 +4,11 @@ namespace App\Filament\Resources\Appointments\Tables;
 
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Forms\Components\DatePicker;
 
 class AppointmentsTable
 {
@@ -51,6 +56,49 @@ class AppointmentsTable
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ]);
+            ])
+            ->filters([
+                SelectFilter::make('patient')
+                    ->relationship('patient', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->label('Paciente'),
+                SelectFilter::make('professional')
+                    ->relationship('professional', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->label('Profissional'),
+                SelectFilter::make('agreement')
+                    ->relationship('patient.agreement', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->label('Convênio'),
+                SelectFilter::make('therapy')
+                    ->relationship('therapy', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->label('Terapia'),
+                SelectFilter::make('serviceType')
+                    ->relationship('serviceType', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->label('Tipo de Atendimento'),
+                Filter::make('appointment_date')
+                    ->form([
+                        DatePicker::make('date_from')->label('Data Início'),
+                        DatePicker::make('date_until')->label('Data Fim'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['date_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('appointment_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['date_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('appointment_date', '<=', $date),
+                            );
+                    })
+            ], layout: FiltersLayout::AboveContent);
     }
 }
