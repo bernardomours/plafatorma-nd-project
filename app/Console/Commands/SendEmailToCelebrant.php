@@ -49,7 +49,7 @@ class SendEmailToCelebrant extends Command
 
         // Envia e-mail para o RH de Mossoró
         if ($aniversariantesMossoro->isNotEmpty()) {
-            Mail::to('bindmossoro@gmail.com')->send(new BirthdayCelebrants($aniversariantesMossoro));
+            Mail::to('rh@ndmossoro.com')->send(new BirthdayCelebrants($aniversariantesMossoro));
             $this->info('E-mail para RH Mossoró enviado com ' . $aniversariantesMossoro->count() . ' aniversariantes.');
         } else {
             $this->info('Nenhum aniversariante hoje para o RH Mossoró.');
@@ -57,7 +57,7 @@ class SendEmailToCelebrant extends Command
 
         // Envia e-mail para o RH de Natal
         if ($aniversariantesNatal->isNotEmpty()) {
-            Mail::to('bernardo.araujo1612@gmail.com')->send(new BirthdayCelebrants($aniversariantesNatal));
+            Mail::to('rh@ndnatal.com')->send(new BirthdayCelebrants($aniversariantesNatal));
             $this->info('E-mail para RH Natal enviado com ' . $aniversariantesNatal->count() . ' aniversariantes.');
         } else {
             $this->info('Nenhum aniversariante hoje para o RH Natal.');
