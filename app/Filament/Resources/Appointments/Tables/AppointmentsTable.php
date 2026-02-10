@@ -9,6 +9,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\Action;
 
 class AppointmentsTable
 {
@@ -99,6 +100,13 @@ class AppointmentsTable
                                 fn (Builder $query, $date): Builder => $query->whereDate('appointment_date', '<=', $date),
                             );
                     })
-            ], layout: FiltersLayout::AboveContent);
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn ($action) => $action // <--- Sem o tipo, funciona sempre!
+                    ->button()
+                    ->label('Filtros')
+                    ->slideOver()
+                    ->icon('heroicon-m-chevron-down')
+            );
     }
 }

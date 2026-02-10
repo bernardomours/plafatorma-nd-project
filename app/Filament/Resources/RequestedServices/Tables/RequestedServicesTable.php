@@ -7,6 +7,11 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\Select;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 
 class RequestedServicesTable
 {
@@ -18,7 +23,7 @@ class RequestedServicesTable
                     ->label('Nome')
                     ->numeric()
                     ->sortable(),
-                    TextColumn::make('therapy.name')
+                TextColumn::make('therapy.name')
                     ->label('Terapia')
                     ->numeric()
                     ->sortable(),
@@ -58,9 +63,50 @@ class RequestedServicesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
-            ])
-            ->recordActions([
+                SelectFilter::make('unit')
+                    ->relationship('patient.unit', 'city')
+                    ->searchable()
+                    ->preload()
+                    ->label('Unidade'),
+                Filter::make('month_year')
+                    ->form([
+                        Select::make('month')
+                            ->label('Mês')
+                            ->options([
+                                1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril',
+                                5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto',
+                                9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'
+                            ]),
+                        Select::make('year')
+                            ->label('Ano')
+                            ->options(function () {
+                                $years = [];
+                                for ($i = 0; $i <= 5; $i++) {
+                                    $year = now()->subYears($i)->year;
+                                    $years[$year] = $year;
+                                }
+                                return $years;
+                            }),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['year'],
+                                fn (Builder $query, $year): Builder => $query->whereYear('month_year', '=', $year)
+                            )
+                            ->when(
+                                $data['month'],
+                                fn (Builder $query, $month): Builder => $query->whereMonth('month_year', '=', $month)
+                            );
+                    })
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn ($action) => $action // <--- Sem o tipo, funciona sempre!
+                    ->button()
+                    ->label('Filtros')
+                    ->slideOver()
+                    ->icon('heroicon-m-chevron-down'))
+        ->recordActions([
                 EditAction::make(),
             ])
             ->toolbarActions([

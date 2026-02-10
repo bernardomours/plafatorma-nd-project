@@ -52,7 +52,6 @@ class RequestedServiceForm
                 ->numeric(),
             TextInput::make('planned_hours')
                 ->label('Horas Planejadas')
-                ->required()
                 ->numeric(),
         ];
     }
