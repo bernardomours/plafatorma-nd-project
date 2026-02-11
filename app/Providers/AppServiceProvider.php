@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,5 +27,9 @@ class AppServiceProvider extends ServiceProvider
             PanelsRenderHook::SIDEBAR_FOOTER,
             fn (): string => Blade::render('@livewire(App\\Livewire\\SidebarFooter::class)'),
         );
+
+        if($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
