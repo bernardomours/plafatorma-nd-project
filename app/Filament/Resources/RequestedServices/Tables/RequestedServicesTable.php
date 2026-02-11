@@ -65,7 +65,6 @@ class RequestedServicesTable
             ->filters([
                 SelectFilter::make('unit')
                     ->relationship('patient.unit', 'city')
-                    ->searchable()
                     ->preload()
                     ->label('Unidade'),
                 Filter::make('month_year')
@@ -101,7 +100,7 @@ class RequestedServicesTable
                     })
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersTriggerAction(
-                fn ($action) => $action // <--- Sem o tipo, funciona sempre!
+                fn ($action) => $action
                     ->button()
                     ->label('Filtros')
                     ->slideOver()

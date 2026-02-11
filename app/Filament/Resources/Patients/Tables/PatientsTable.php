@@ -9,6 +9,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
 
 class PatientsTable
 {
@@ -67,7 +69,18 @@ class PatientsTable
                     ->trueLabel('Apenas Ativos')
                     ->falseLabel('Apenas Inativos')
                     ->default(true),
-            ])
+
+                SelectFilter::make('unit')
+                    ->relationship('unit', 'city')
+                    ->preload()
+                    ->label('Unidade'),
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn ($action) => $action
+                    ->button()
+                    ->label('Filtros')
+                    ->slideOver()
+                    ->icon('heroicon-m-chevron-down'))
             ->recordActions([
                 EditAction::make(),
             ])

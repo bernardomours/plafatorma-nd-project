@@ -23,7 +23,6 @@ class ForwardedForm
                 Select::make('unit_id')
                     ->label('Unidade')
                     ->relationship('unit', 'city')
-                    ->searchable()
                     ->preload()
                     ->required(),
                 RichEditor::make('status')
@@ -34,7 +33,6 @@ class ForwardedForm
                 Select::make('agreement_id')
                     ->label('Convênio')
                     ->relationship('agreement', 'name')
-                    ->searchable()
                     ->preload(),
             ]);
     }

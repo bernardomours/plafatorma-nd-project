@@ -38,7 +38,6 @@ class ProfessionalForm
                 Select::make('unit_id')
                     ->label('Unidade')
                     ->relationship('unit', 'city')
-                    ->searchable() 
                     ->preload(),
             ]);
     }

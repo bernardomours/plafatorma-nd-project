@@ -43,7 +43,6 @@ class PatientForm
                         name: 'agreement', 
                         titleAttribute: 'name',
                     )
-                    ->searchable()
                     ->preload()
                     ->live()
                     ->required()
