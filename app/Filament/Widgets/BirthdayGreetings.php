@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BirthdayGreetings extends TableWidget
 {
+    protected static ?string $pollingInterval = null;
+
     public function table(Table $table): Table
     {
         return $table

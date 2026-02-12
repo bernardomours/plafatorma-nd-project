@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Collection;
 
 class BirthdayGreetingsStaff extends TableWidget
 {
+    protected static ?string $pollingInterval = null;
+
     public function getTableRecords(): Collection
     {
         $professionals = Professional::with('unit')
