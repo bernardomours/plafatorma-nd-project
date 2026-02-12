@@ -82,7 +82,7 @@ class PatientSchedule extends Page implements HasForms, HasActions
                 'end_time' => $record->end_time,
                 'professional_id' => $record->professional_id,
                 'therapy_id' => $record->therapy_id,
-                'therapy_type' => $record->therapy_type,
+                'type_therapy' => $record->type_therapy,
             ])
             ->form(ScheduleForm::getSchema())
             ->action(function (array $data, Schedule $record) {

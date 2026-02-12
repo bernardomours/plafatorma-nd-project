@@ -35,7 +35,7 @@
                                         <div>
                                             <p class="font-bold text-blue-800 text-sm">{{ \Carbon\Carbon::parse($schedule->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}</p>
                                             <p class="font-bold text-gray-700 mt-1">{{ $schedule->therapy?->name ?? 'N/A' }}</p>
-                                            <p class="text-sm text-gray-600">{{ ucfirst($schedule->tipo_atendimento) }}</p>
+                                            <p class="text-sm text-gray-600">{{ ucfirst($schedule->type_therapy) }}</p>
                                             <p class="text-sm text-gray-500">Prof. {{ $schedule->professional?->name ?? 'N/A' }}</p>
                                         </div>
 
