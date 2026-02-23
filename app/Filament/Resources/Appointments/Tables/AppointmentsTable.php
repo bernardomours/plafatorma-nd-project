@@ -102,7 +102,7 @@ class AppointmentsTable
                     })
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersTriggerAction(
-                fn ($action) => $action // <--- Sem o tipo, funciona sempre!
+                fn ($action) => $action
                     ->button()
                     ->label('Filtros')
                     ->slideOver()

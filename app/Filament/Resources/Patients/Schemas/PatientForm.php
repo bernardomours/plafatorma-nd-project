@@ -6,6 +6,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class PatientForm
 {
@@ -40,12 +41,30 @@ class PatientForm
                 Select::make('agreement_id')
                     ->label('Convênio')
                     ->relationship(
-                        name: 'agreement', 
+                        name: 'agreement',
                         titleAttribute: 'name',
                     )
                     ->preload()
                     ->live()
-                    ->required()
+                    ->required(),
+                Select::make('supervisor_id')
+                    ->relationship(
+                        name: 'supervisor',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query) => $query->where('role', 'supervisor')
+                    )
+                    ->label('Supervisor')
+                    ->searchable()
+                    ->preload(),
+                Select::make('coordinator_id')
+                    ->relationship(
+                        name: 'coordinator',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query) => $query->where('role', 'coordinator')
+                    )
+                    ->label('Coordenador')
+                    ->searchable()
+                    ->preload(),
             ]);
     }
 }

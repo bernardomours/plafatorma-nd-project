@@ -35,6 +35,16 @@ class ProfessionalsTable
                     ->label('Email')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
+                TextColumn::make('role')
+                    ->label('Cargo / Função')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'therapist'   => 'AT',
+                        'supervisor'  => 'Supervisor',
+                        'coordinator' => 'Coordenador',
+                        default       => $state, // Caso apareça algo estranho, mostra o original
+                    }),
                 TextColumn::make('therapy.name')
                     ->label('Especialidade')
                     ->searchable(),

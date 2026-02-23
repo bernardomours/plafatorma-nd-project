@@ -11,7 +11,7 @@ use App\Models\RequestedService;
 use BackedEnum;
 use UnitEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema; // Corrected namespace for Filament v2
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
 
@@ -27,7 +27,6 @@ class RequestedServiceResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        // Correctly use the `components` method with the array from getFormSchema
         return $schema->components(RequestedServiceForm::getFormSchema());
     }
 

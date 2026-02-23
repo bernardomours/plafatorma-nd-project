@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Scopes\UnitScope;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -26,7 +28,9 @@ class Patient extends Model
         'unit_id',
         'agreement_id',
         'is_active',
-        'agreement_number'
+        'agreement_number',
+        'supervisor_id',
+        'coordinator_id',
     ];
 
     /**
@@ -51,6 +55,16 @@ class Patient extends Model
     public function agreement(): BelongsTo
     {
         return $this->belongsTo(Agreement::class);
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(Professional::class, 'supervisor_id');
+    }
+
+    public function coordinator(): BelongsTo
+    {
+        return $this->belongsTo(Professional::class, 'coordinator_id');
     }
 
     protected static function booted(): void

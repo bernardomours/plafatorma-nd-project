@@ -27,7 +27,7 @@ class PatientResource extends Resource
     protected static ?string $pluralModelLabel = 'Pacientes';
     protected static ?string $navigationLabel = 'Pacientes';
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-user-group';
-    protected static string|UnitEnum|null $navigationGroup = 'Frequência';
+    protected static string|UnitEnum|null $navigationGroup = 'Ocupação';
 
 
     public static function form(Schema $schema): Schema

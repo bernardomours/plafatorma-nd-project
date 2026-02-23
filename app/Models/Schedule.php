@@ -22,34 +22,38 @@ class Schedule extends Model
         'patient_id',
         'professional_id',
         'therapy_id',
-        'type_therapy',
+        'service_type_id',
     ];
 
     /**
-     * The attributes that should be cast.
-     * We are removing all casting for time fields to handle it manually.
-     *
-     * @var array
+     * Get the patient that owns the schedule.
      */
-    protected $casts = [];
-
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
     }
 
+    /**
+     * Get the professional that owns the schedule.
+     */
     public function professional(): BelongsTo
     {
         return $this->belongsTo(Professional::class);
     }
 
+    /**
+     * Get the therapy that owns the schedule.
+     */
     public function therapy(): BelongsTo
     {
         return $this->belongsTo(Therapy::class);
     }
 
-    protected static function booted(): void
+    /**
+     * Get the service type that owns the schedule.
+     */
+    public function serviceType(): BelongsTo
     {
-        static::addGlobalScope(new \App\Models\Scopes\UnitScope);
+        return $this->belongsTo(ServiceType::class);
     }
 }

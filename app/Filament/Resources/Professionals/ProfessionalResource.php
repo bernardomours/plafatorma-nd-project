@@ -20,7 +20,7 @@ class ProfessionalResource extends Resource
     protected static ?string $model = Professional::class;
 
 
-    protected static string|UnitEnum|null $navigationGroup = 'Frequência';
+    protected static string|UnitEnum|null $navigationGroup = 'Ocupação';
 
     protected static ?string $modelLabel = 'Profissional';
     protected static ?string $pluralModelLabel = 'Profissionais';

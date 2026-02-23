@@ -31,6 +31,16 @@ class ProfessionalForm
                     ->label('Número de Registro'),
                 TextInput::make('email')
                     ->label('Email'),
+                Select::make('role')
+                    ->label('Função / Cargo')
+                    ->options([
+                        'therapist'   => 'AT',
+                        'supervisor'  => 'Supervisor',
+                        'coordinator' => 'Coordenador',
+                    ])
+                    ->default('therapist')
+                    ->required()
+                    ->native(false),
                 Select::make('therapy_id')
                     ->label('Especialidade')
                     ->relationship('therapy', 'name')

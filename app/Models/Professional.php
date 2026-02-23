@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\ProfessionalRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Professional extends Model
 {
     use HasFactory;
-
+    use SoftDeletes;
     /**
      * The attributes that are mass assignable.
      *
@@ -24,6 +26,7 @@ class Professional extends Model
         'register_number',
         'therapy_id',
         'email',
+        'role',
     ];
 
     /**
@@ -37,6 +40,7 @@ class Professional extends Model
             'id' => 'integer',
             'birth_date' => 'date',
             'therapy_id' => 'integer',
+            'role' => ProfessionalRole::class,
         ];
     }
 
