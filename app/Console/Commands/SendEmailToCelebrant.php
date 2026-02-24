@@ -66,17 +66,14 @@ class SendEmailToCelebrant extends Command
 
             // Lógica para Unidade Mossoró
             if ($aniversariantesMossoro->isNotEmpty()) {
-                // Separa pacientes dos demais
                 $pacientesMossoro = $aniversariantesMossoro->where('tipo_pessoa', 'Paciente(s)');
                 $outrosAniversariantesMossoro = $aniversariantesMossoro->where('tipo_pessoa', '!=', 'Paciente(s)');
 
-                // Envia e-mail para Controles Internos se houver pacientes aniversariando
                 if ($pacientesMossoro->isNotEmpty()) {
                     Mail::to('controlesinternos@ndmossoro.com')->send(new BirthdayCelebrants($pacientesMossoro));
                     $this->info('E-mail para Controles Internos Mossoró enviado com ' . $pacientesMossoro->count() . ' aniversariantes (pacientes).');
                 }
 
-                // Envia e-mail para o RH se houver profissionais/usuários aniversariando
                 if ($outrosAniversariantesMossoro->isNotEmpty()) {
                     Mail::to('rh@ndmossoro.com')->send(new BirthdayCelebrants($outrosAniversariantesMossoro));
                     $this->info('E-mail para RH Mossoró enviado com ' . $outrosAniversariantesMossoro->count() . ' aniversariantes (profissionais/usuários).');
@@ -85,12 +82,22 @@ class SendEmailToCelebrant extends Command
                 $this->info('Nenhum aniversariante hoje para a unidade de Mossoró.');
             }
 
-            // Envia e-mail para o RH de Natal
+            // Lógica para Outras Unidades
             if ($aniversariantesNatal->isNotEmpty()) {
-                Mail::to('rh@ndnatal.com')->send(new BirthdayCelebrants($aniversariantesNatal));
-                $this->info('E-mail para RH Natal enviado com ' . $aniversariantesNatal->count() . ' aniversariantes.');
+                $pacientesNatal = $aniversariantesNatal->where('tipo_pessoa', 'Paciente(s)');
+                $outrosAniversariantesNatal = $aniversariantesNatal->where('tipo_pessoa', '!=', 'Paciente(s)');
+
+                if ($pacientesNatal->isNotEmpty()) {
+                    Mail::to('controlesinternos@ndnatal.com')->send(new BirthdayCelebrants($pacientesNatal));
+                    $this->info('E-mail para Controles Internos Natal enviado com ' . $pacientesNatal->count() . ' aniversariantes (pacientes).');
+                }
+
+                if ($outrosAniversariantesNatal->isNotEmpty()) {
+                    Mail::to('rh@ndnatal.com')->send(new BirthdayCelebrants($outrosAniversariantesNatal));
+                    $this->info('E-mail para RH Natal enviado com ' . $outrosAniversariantesNatal->count() . ' aniversariantes (profissionais/usuários).');
+                }
             } else {
-                $this->info('Nenhum aniversariante hoje para a unidade de Natal.');
+                $this->info('Nenhum aniversariante hoje para as outras unidades.');
             }
 
         } catch (\Exception $e) {
