@@ -26,7 +26,7 @@ class Monitoring extends Model
     protected $fillable = [
         'setor_responsavel',
         'unit_id',
-        'professional_id',
+        'user_id',
         'task',
         'status',
         'prazo',
@@ -41,6 +41,7 @@ class Monitoring extends Model
     {
         return [
             'status' => MonitoringStatus::class,
+            'prazo' => 'date',
         ];
     }
 
@@ -53,10 +54,10 @@ class Monitoring extends Model
     }
 
     /**
-     * A monitoring can be assigned to a professional.
+     * A monitoring is assigned to a user.
      */
-    public function professional(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Professional::class);
+        return $this->belongsTo(User::class);
     }
 }

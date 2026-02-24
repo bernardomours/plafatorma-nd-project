@@ -19,11 +19,11 @@ class MonitoringForm
                 TextInput::make('setor_responsavel')
                     ->label('Setor Responsável')
                     ->maxLength(255),
-                Select::make('professional_id')
-                    ->label('Profissional Responsável')
-                    ->relationship('professional', 'name')
-                    ->preload()
-                    ->searchable(),
+                Select::make('user_id')
+                    ->label('Responsável')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload(),
                 Select::make('status')
                     ->label('Status')
                     ->options(MonitoringStatus::class)

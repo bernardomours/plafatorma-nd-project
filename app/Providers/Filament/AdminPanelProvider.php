@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(url('/images/icon-nd.png'))
-            ->brandLogoHeight('5rem')
+            ->brandLogoHeight('7rem')
             ->brandName('Plataforma ND')
             ->favicon(url('/images/favicon.png'))
             ->login()

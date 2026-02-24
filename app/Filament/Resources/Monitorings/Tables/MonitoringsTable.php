@@ -27,7 +27,7 @@ class MonitoringsTable
                 TextColumn::make('setor_responsavel')
                     ->label('Setor')
                     ->searchable(),
-                TextColumn::make('professional.name')
+                TextColumn::make('user.name')
                     ->label('Responsável')
                     ->sortable(),
                 BadgeColumn::make('status')
