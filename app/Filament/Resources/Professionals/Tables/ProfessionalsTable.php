@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\Professionals\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProfessionalsTable
 {
@@ -43,7 +46,7 @@ class ProfessionalsTable
                         'therapist'   => 'AT',
                         'supervisor'  => 'Supervisor',
                         'coordinator' => 'Coordenador',
-                        default       => $state, // Caso apareça algo estranho, mostra o original
+                        default       => $state,
                     }),
                 TextColumn::make('therapy.name')
                     ->label('Especialidade')
@@ -67,12 +70,33 @@ class ProfessionalsTable
             ->filters([
                 //
             ])
-            ->recordActions([
+            ->actions([
                 EditAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('delete')
+                        ->label('Excluir selecionados')
+                        ->color('danger')
+                        ->icon('heroicon-o-trash')
+                        ->requiresConfirmation()
+                        ->form([
+                            Select::make('deletion_reason')
+                                ->label('Motivo da Exclusão')
+                                ->options([
+                                    'Iniciativa do profissional' => 'Iniciativa do profissional',
+                                    'Iniciativa da empresa' => 'Iniciativa da empresa',
+                                ])
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $records->each(function ($record) use ($data) {
+                                $record->update([
+                                    'deletion_reason' => $data['deletion_reason'],
+                                ]);
+                                $record->delete();
+                            });
+                        }),
                 ]),
             ]);
     }

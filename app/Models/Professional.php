@@ -27,6 +27,7 @@ class Professional extends Model
         'therapy_id',
         'email',
         'role',
+        'deletion_reason',
     ];
 
     /**
