@@ -76,11 +76,13 @@ class PatientsTable
                 SelectFilter::make('unit')
                     ->relationship('unit', 'city')
                     ->preload()
+                    ->multiple()
                     ->label('Unidade'),
 
                 SelectFilter::make('agreement')
                     ->relationship('agreement', 'name')
                     ->preload()
+                    ->multiple()
                     ->label('Convênio'),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('name', 'asc')

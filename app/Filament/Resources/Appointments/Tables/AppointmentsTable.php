@@ -84,6 +84,11 @@ class AppointmentsTable
                     ->searchable()
                     ->preload()
                     ->label('Tipo de Atendimento'),
+                SelectFilter::make('unit')
+                    ->relationship('unit', 'city')
+                    ->searchable()
+                    ->preload()
+                    ->label('Unidade'),
                 Filter::make('appointment_date')
                     ->form([
                         DatePicker::make('date_from')->label('Data Início'),
