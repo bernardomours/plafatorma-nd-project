@@ -21,15 +21,12 @@ class AppointmentsByTypeChart extends ChartWidget
 
     protected function getData(): array
     {
-        // 1. Pega a query da tabela JÁ COM OS FILTROS APLICADOS.
         $query = $this->getPageTableQuery();
-
-        // 2. Agrupa, conta e ORDENA do maior para o menor (formando o ranking)
         $data = $query
             ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-            ->select('therapies.name', DB::raw('count(*) as count'))
+            ->select('therapies.name', DB::raw('SUM(appointments.session_number) as count'))
             ->groupBy('therapies.name')
-            ->orderByDesc('count') // <-- A mágica do ranking acontece aqui!
+            ->orderByDesc('count')
             ->get();
 
         $labels = $data->pluck('name')->toArray();
@@ -40,17 +37,16 @@ class AppointmentsByTypeChart extends ChartWidget
                 [
                     'label' => 'Qtd de Atendimentos',
                     'data' => $counts,
-                    // 3. Paleta de cores baseada na sua imagem de referência (tons de ciano)
                     'backgroundColor' => [
-                        '#48D1CC', // Mais escuro no topo
+                        '#48D1CC',
                         '#40E0D0', 
                         '#76D7C4',
                         '#A2D9CE',
                         '#A3E4D7',
                         '#D1F2EB',
-                        '#E8F8F5', // Mais clarinho no final
+                        '#E8F8F5',
                     ],
-                    'borderRadius' => 4, // Deixa as pontinhas das barras arredondadas
+                    'borderRadius' => 4,
                 ],
             ],
             'labels' => $labels,
@@ -59,31 +55,29 @@ class AppointmentsByTypeChart extends ChartWidget
 
     protected function getType(): string
     {
-        // 4. Muda de 'doughnut' para 'bar'
         return 'bar';
     }
 
     protected function getOptions(): array
     {
-        // 5. Configurações visuais do Chart.js para "deitar" o gráfico
         return [
-            'indexAxis' => 'y', // Isso transforma as barras verticais em horizontais
+            'indexAxis' => 'y',
             'plugins' => [
                 'legend' => [
-                    'display' => false, // Esconde a legenda para ficar limpo igual à imagem
+                    'display' => false,
                 ],
             ],
             'scales' => [
                 'x' => [
                     'beginAtZero' => true,
                     'ticks' => [
-                        'stepSize' => 1, // Força números inteiros (1, 2, 3...)
+                        'stepSize' => 1,
                         'precision' => 0,
                     ],
                 ],
                 'y' => [
                     'grid' => [
-                        'display' => false, // Remove as linhas de grade horizontais de fundo
+                        'display' => false,
                     ],
                 ],
             ],
