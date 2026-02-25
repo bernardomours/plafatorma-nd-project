@@ -19,6 +19,9 @@ class ProfessionalsTable
             ->columns([
                 TextColumn::make('name')
                     ->label('Nome')
+                    ->sortable(query: function ($query, string $direction) {
+                        return $query->orderByRaw("LOWER(name) {$direction}");
+                    }) //isso serve para deixar tudo minusculo para ordenar sem diferir maiusculas e minusculas
                     ->searchable(),
                 TextColumn::make('cpf')
                     ->label('CPF')
@@ -67,6 +70,7 @@ class ProfessionalsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('name', 'asc')
             ->filters([
                 //
             ])

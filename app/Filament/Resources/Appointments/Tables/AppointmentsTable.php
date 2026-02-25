@@ -101,6 +101,7 @@ class AppointmentsTable
                             );
                     })
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->defaultSort('appointment_date', 'asc')
             ->filtersTriggerAction(
                 fn ($action) => $action
                     ->button()

@@ -23,6 +23,10 @@ class PatientForm
                 TextInput::make('cpf')
                     ->label('CPF')
                     ->required()
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages([
+                        'unique' => 'Esse CPF já está cadastrado.'
+                    ])
                     ->helperText('Coloque apenas os dígitos'),
                 TextInput::make('agreement_number')
                     ->label('Carteira')

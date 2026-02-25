@@ -76,12 +76,16 @@ class AppointmentForm
                     ->label('Check-in')
                     ->required()
                     ->seconds(false)
+                    ->displayFormat('H:i')
+                    ->format('H:i')
                     ->live()
                     ->afterStateUpdated($updateSessionNumber),
                 TimePicker::make('check_out')
                     ->label('Check-out')
                     ->required()
                     ->seconds(false)
+                    ->displayFormat('H:i')
+                    ->format('H:i')
                     ->live()
                     ->afterStateUpdated($updateSessionNumber),
                 Select::make('therapy_id')

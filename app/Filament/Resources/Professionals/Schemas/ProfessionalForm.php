@@ -18,6 +18,10 @@ class ProfessionalForm
                     ->required(),
                 TextInput::make('cpf')
                     ->label('CPF')
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages([
+                        'unique' => 'Esse CPF já está cadastrado.'
+                    ])
                     ->required(),
                 TextInput::make('phone')
                     ->label('Telefone')

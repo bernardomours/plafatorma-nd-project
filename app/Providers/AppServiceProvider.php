@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\URL;
 use App\Models\Appointment;
 use App\Observers\AppointmentObserver;
+use Illuminate\Contracts\View\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Appointment::observe(AppointmentObserver::class);
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_END,
+            fn (): View => view('filament.dark-mode-table-fix'),
+        );
         
         FilamentView::registerRenderHook(
             PanelsRenderHook::SIDEBAR_FOOTER,
@@ -27,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         if($this->app->environment('production')) {
-            URL::forceScheme('httpsí');
+            URL::forceScheme('https');
         }
     }
 }

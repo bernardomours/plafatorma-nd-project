@@ -20,6 +20,9 @@ class PatientsTable
             ->columns([
                 TextColumn::make('name')
                     ->label('Nome')
+                    ->sortable(query: function ($query, string $direction) {
+                        return $query->orderByRaw("LOWER(name) {$direction}");
+                    })
                     ->searchable(),
                 TextColumn::make('cpf')
                     ->label('CPF')
@@ -74,7 +77,13 @@ class PatientsTable
                     ->relationship('unit', 'city')
                     ->preload()
                     ->label('Unidade'),
+
+                SelectFilter::make('agreement')
+                    ->relationship('agreement', 'name')
+                    ->preload()
+                    ->label('Convênio'),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->defaultSort('name', 'asc')
             ->filtersTriggerAction(
                 fn ($action) => $action
                     ->button()
