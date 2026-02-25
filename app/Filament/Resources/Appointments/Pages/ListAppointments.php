@@ -2,12 +2,13 @@
 
 namespace App\Filament\Resources\Appointments\Pages;
 
+use App\Filament\Resources\Appointments\AppointmentResource;
+use App\Filament\Resources\Appointments\Widgets\AppointmentsByTypeChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsPerDayChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentStats;
-use App\Filament\Resources\Appointments\AppointmentResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
 use Filament\Pages\Concerns\ExposesTableToWidgets;
+use Filament\Resources\Pages\ListRecords;
 
 class ListAppointments extends ListRecords
 {
@@ -27,6 +28,7 @@ class ListAppointments extends ListRecords
         return [
             AppointmentStats::class,
             AppointmentsPerDayChart::class,
+            AppointmentsByTypeChart::class,
         ];
     }
 }
