@@ -24,10 +24,13 @@ class AppointmentStats extends BaseWidget
         // Pega a query da tabela JÁ COM OS FILTROS APLICADOS.
         $query = $this->getPageTableQuery();
 
-        // 1. CALCULA O TOTAL DE ATENDIMENTOS
-        $totalAppointments = $this->getPageTableQuery()->count();
+        // --- Card 1: Total de Sessões --- 
+        // Soma o valor da coluna 'session_number' dos atendimentos filtrados.
+        $totalSessoes = (clone $query)->sum('session_number');
 
-        // 2. CALCULA A MÉDIA DIÁRIA
+        // --- Card 2: Média de Atendimentos por Dia ---
+        $totalAppointments = (clone $query)->count(); // Conta o número de registros de atendimento
+        
         $filters = $this->tableFilters;
         $appointmentDateFilters = $filters['appointment_date'] ?? [];
 
@@ -37,10 +40,10 @@ class AppointmentStats extends BaseWidget
         $numberOfDays = $startDate->diffInDays($endDate) + 1;
         $average = ($numberOfDays > 0) ? ($totalAppointments / $numberOfDays) : 0;
 
-        // 3. RETORNA OS CARDS
+        // --- Retorna os Cards ---
         return [
-            Stat::make('Total de Atendimentos', $totalAppointments)
-                ->description('Nº de atendimentos no período')
+            Stat::make('Total de Sessões', $totalSessoes)
+                ->description('Soma das sessões no período')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('primary'),
             
@@ -49,8 +52,7 @@ class AppointmentStats extends BaseWidget
                 ->descriptionIcon('heroicon-m-calculator')
                 ->color('success'),
             
-            // Card em branco, como solicitado no layout
-            Stat::make('-', ' ')
+            Stat::make(' - ', ' ')
                 ->description(' ')
                 ->color('gray'),
         ];
