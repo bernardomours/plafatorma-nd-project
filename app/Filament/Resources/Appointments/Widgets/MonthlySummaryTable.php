@@ -28,11 +28,9 @@ class MonthlySummaryTable extends BaseWidget
                     ->join('patients', 'appointments.patient_id', '=', 'patients.id')
                     ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
                     ->select(
-                        DB::raw("strftime('%m/%Y', appointment_date) as reference_month"),
-                        'patients.name as patient_name',
+                        DB::raw("DATE_FORMAT(appointment_date, '%m/%Y') as reference_month"),                        'patients.name as patient_name',
                         'therapies.name as therapy_name',
                         DB::raw('SUM(session_number) as total_sessions')
-                        // Removi a linha do "record_id" daqui!
                     )
                     ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patient_name', 'therapy_name')
                     ->orderBy('reference_month', 'desc')
