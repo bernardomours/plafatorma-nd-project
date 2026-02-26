@@ -11,36 +11,33 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class AppointmentStats extends BaseWidget
 {
     use InteractsWithPageTable;
+    public array $tableColumnSearches = [];
 
     protected ?string $pollingInterval = null;
 
     protected function getTablePage(): string
     {
-        return ListAppointments::class;
+        return \App\Filament\Resources\Appointments\Pages\AttendanceReports::class;
     }
 
     protected function getStats(): array
     {
-        // Pega a query da tabela JÁ COM OS FILTROS APLICADOS.
-        $query = $this->getPageTableQuery();
+        $query = $this->getPageTableQuery()->clone();
 
-        // --- Card 1: Total de Sessões --- 
-        // Soma o valor da coluna 'session_number' dos atendimentos filtrados.
+        $query->getQuery()->groups = null;
+        $query->getQuery()->columns = null;
+        $query->getQuery()->orders = null;
+
         $totalSessoes = (clone $query)->sum('session_number');
+        $totalAppointments = (clone $query)->count(); 
+        $mesFiltrado = $this->tableFilters['mes']['value'] ?? date('m');
+        $ano = date('Y');
 
-        // --- Card 2: Média de Atendimentos por Dia ---
-        $totalAppointments = (clone $query)->count(); // Conta o número de registros de atendimento
-        
-        $filters = $this->tableFilters;
-        $appointmentDateFilters = $filters['appointment_date'] ?? [];
-
-        $startDate = isset($appointmentDateFilters['date_from']) ? Carbon::parse($appointmentDateFilters['date_from']) : Carbon::now()->startOfMonth();
-        $endDate = isset($appointmentDateFilters['date_until']) ? Carbon::parse($appointmentDateFilters['date_until']) : Carbon::now()->endOfMonth();
-
+        $startDate = \Carbon\Carbon::createFromDate($ano, $mesFiltrado, 1)->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
         $numberOfDays = $startDate->diffInDays($endDate) + 1;
         $average = ($numberOfDays > 0) ? ($totalAppointments / $numberOfDays) : 0;
 
-        // --- Retorna os Cards ---
         return [
             Stat::make('Total de Sessões', $totalSessoes)
                 ->description('Soma das sessões no período')

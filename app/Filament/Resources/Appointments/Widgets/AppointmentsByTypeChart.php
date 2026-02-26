@@ -10,21 +10,24 @@ use Illuminate\Support\Facades\DB;
 class AppointmentsByTypeChart extends ChartWidget
 {
     use InteractsWithPageTable;
+    public array $tableColumnSearches = [];
 
     protected ?string $pollingInterval = null;
     protected ?string $heading = 'Ranking de Atendimentos por Terapia';
 
     protected function getTablePage(): string
     {
-        return ListAppointments::class;
+        return \App\Filament\Resources\Appointments\Pages\AttendanceReports::class;
     }
 
     protected function getData(): array
     {
-        $query = $this->getPageTableQuery();
+        $query = $this->getPageTableQuery()->clone();
+        $query->getQuery()->groups = null;
+        $query->getQuery()->columns = null;
+        $query->getQuery()->orders = null;
         $data = $query
-            ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-            ->select('therapies.name', DB::raw('SUM(appointments.session_number) as count'))
+            ->select('therapies.name', \Illuminate\Support\Facades\DB::raw('SUM(appointments.session_number) as count'))
             ->groupBy('therapies.name')
             ->orderByDesc('count')
             ->get();

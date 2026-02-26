@@ -12,55 +12,62 @@ use Illuminate\Support\Facades\DB;
 class AppointmentsPerDayChart extends ChartWidget
 {
     use InteractsWithPageTable;
+    public array $tableColumnSearches = [];
 
     protected ?string $heading = 'Atendimentos por Dia';
     protected ?string $pollingInterval = null;
 
     protected function getTablePage(): string
     {
-        return ListAppointments::class;
+        return \App\Filament\Resources\Appointments\Pages\AttendanceReports::class;
     }
 
     protected function getData(): array
     {
-        // Pega a query da tabela JÁ COM OS FILTROS APLICADOS, graças ao trait.
-        $query = $this->getPageTableQuery();
-        
-        // CORREÇÃO: Usa a propriedade $tableFilters do Filament v3
-        $filters = $this->tableFilters; 
-        
-        $appointmentDateFilters = $filters['appointment_date'] ?? [];
+        $query = $this->getPageTableQuery()->clone();
 
-        $startDate = isset($appointmentDateFilters['date_from']) ? Carbon::parse($appointmentDateFilters['date_from']) : Carbon::now()->startOfMonth();
-        $endDate = isset($appointmentDateFilters['date_until']) ? Carbon::parse($appointmentDateFilters['date_until']) : Carbon::now()->endOfMonth();
+        $query->getQuery()->groups = null;
+        $query->getQuery()->columns = null;
+        $query->getQuery()->orders = null;
 
-        // Agrupa e conta os atendimentos por dia usando a query já filtrada.
-        $data = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
-                      ->groupBy('date')
-                      ->orderBy('date', 'asc')
-                      ->get()
-                      ->pluck('count', 'date')
-                      ->toArray();
+        $mesFiltrado = $this->tableFilters['mes']['value'] ?? date('m');
+        $ano = date('Y'); 
 
-        // Preenche os dias sem atendimentos com o valor 0 para manter a consistência do gráfico.
-        // Dica: Adicionei o ->copy() no endDate para evitar que a data original seja modificada acidentalmente no loop
+        $startDate = \Carbon\Carbon::createFromDate($ano, $mesFiltrado, 1)->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+
+        $isSqlite = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite';
+
+        // Busca os dados somando as sessões por DIA
+        $dadosBanco = $query->select(
+            $isSqlite 
+                ? \Illuminate\Support\Facades\DB::raw("strftime('%d', appointment_date) as dia")
+                : \Illuminate\Support\Facades\DB::raw("DATE_FORMAT(appointment_date, '%d') as dia"),
+            \Illuminate\Support\Facades\DB::raw('SUM(session_number) as total')
+        )
+        ->groupBy('dia')
+        ->pluck('total', 'dia')
+        ->toArray();
+
         $period = new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate->copy()->addDay());
+        
         $labels = [];
         $dataset = [];
 
         foreach ($period as $date) {
-            $dateString = $date->format('Y-m-d');
-            $labels[] = $date->format('d/m');
-            $dataset[] = $data[$dateString] ?? 0;
+            $diaPad = $date->format('d'); // Retorna '01', '02', etc.
+            $labels[] = $date->format('d/m'); // Exibe '01/02' no gráfico
+            
+            // Puxa o total do banco ou coloca 0 se não teve atendimento
+            $dataset[] = $dadosBanco[$diaPad] ?? 0;
         }
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Atendimentos',
+                    'label' => 'Sessões Realizadas',
                     'data' => $dataset,
-                    'backgroundColor' => '#36A2EB',
-                    'borderColor' => '#9BD0F5',
+                    'backgroundColor' => '#48D1CC',
                 ],
             ],
             'labels' => $labels,

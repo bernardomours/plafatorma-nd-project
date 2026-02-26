@@ -43,7 +43,7 @@ class ListAppointments extends ListRecords
     protected function getHeaderWidgets(): array
     {
         return [
-            AppointmentStats::class,
+            //
         ];
     }
 }
