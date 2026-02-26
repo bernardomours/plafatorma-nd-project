@@ -10,6 +10,8 @@ use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
 
 class ProfessionalsTable
 {
@@ -72,8 +74,18 @@ class ProfessionalsTable
             ])
             ->defaultSort('name', 'asc')
             ->filters([
-                //
-            ])
+                SelectFilter::make('unit')
+                    ->relationship('unit', 'city')
+                    ->preload()
+                    ->multiple()
+                    ->label('Unidade'),
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn ($action) => $action
+                    ->button()
+                    ->label('Filtros')
+                    ->slideOver()
+                    ->icon('heroicon-m-chevron-down'))
             ->actions([
                 EditAction::make(),
             ])
