@@ -32,7 +32,7 @@
         <div class="info-container">
             <h1>Relatório de Atendimentos</h1>
             <p>Gerado em: {{ now()->timezone('America/Fortaleza')->format('d/m/Y \à\s H:i') }}</p>
-            <p>Total de Registros: {{ $atendimentos->count() }}</p>
+            <p>Total de Sessões: {{ $atendimentos->sum('session_number') }}</p>
         </div>
         <div class="clear"></div>
     </header>

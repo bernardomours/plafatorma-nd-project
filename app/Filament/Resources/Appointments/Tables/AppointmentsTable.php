@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\Grid;
 
 class AppointmentsTable
 {

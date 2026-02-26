@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\Appointments\Pages;
 
 use App\Filament\Resources\Appointments\AppointmentResource;
-use App\Filament\Resources\Appointments\Widgets\AppointmentsByTypeChart;
-use App\Filament\Resources\Appointments\Widgets\AppointmentsPerDayChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentStats;
 use Filament\Actions;
 use Filament\Pages\Concerns\ExposesTableToWidgets;
@@ -46,8 +44,6 @@ class ListAppointments extends ListRecords
     {
         return [
             AppointmentStats::class,
-            AppointmentsPerDayChart::class,
-            AppointmentsByTypeChart::class,
         ];
     }
 }
