@@ -181,72 +181,82 @@ class AttendanceReports extends Page implements HasTable
                         ])
                         ->default(date('Y'))
                         ->required(),
+
+                    // O NOVO CAMPO DE UNIDADES COM MÚLTIPLA ESCOLHA
+                    \Filament\Forms\Components\Select::make('unidades')
+                        ->label('Unidade(s)')
+                        ->options(\App\Models\Unit::pluck('city', 'id')) // Puxa os nomes das unidades
+                        ->multiple() // A mágica que permite escolher mais de uma!
+                        ->searchable()
+                        ->placeholder('Todas as unidades'),
                ])
                ->action(function (array $data) {
-                $mes = $data['mes'];
-                $ano = $data['ano'];
+                    $mes = $data['mes'];
+                    $ano = $data['ano'];
+                    $unidades = $data['unidades'] ?? []; // Pega o array de unidades (ou vazio se não escolher nenhuma)
 
-                // 1. Filtramos apenas Mês, Ano e Terapia (sem o paciente, como você pediu)
-                $query = Appointment::query()
-                    ->whereMonth('appointment_date', $mes)
-                    ->whereYear('appointment_date', $ano)
-                    ->when($this->therapy_id, fn ($q) => $q->where('therapy_id', $this->therapy_id));
+                    // 1. Filtramos Mês, Ano, e as Unidades selecionadas
+                    $query = Appointment::query()
+                        ->whereMonth('appointments.appointment_date', $mes)
+                        ->whereYear('appointments.appointment_date', $ano)
+                        ->when($this->therapy_id, fn ($q) => $q->where('appointments.therapy_id', $this->therapy_id))
+                        ->when(!empty($unidades), fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->whereIn('unit_id', $unidades)));
 
-                // 2. Calculamos as ESTATÍSTICAS
-                $totalSessoes = (clone $query)->sum('session_number');
-                $totalAppointments = (clone $query)->count(); 
-                
-                $startDate = \Carbon\Carbon::createFromDate($ano, $mes, 1)->startOfMonth();
-                $endDate = $startDate->copy()->endOfMonth();
-                $diasNoMes = $startDate->diffInDays($endDate) + 1;
-                $mediaDiaria = ($diasNoMes > 0) ? number_format($totalAppointments / $diasNoMes, 2, ',', '.') : '0,00';
+                    // 2. Calculamos as ESTATÍSTICAS
+                    $totalSessoes = (clone $query)->sum('session_number');
+                    $totalAppointments = (clone $query)->count(); 
+                    
+                    $startDate = \Carbon\Carbon::createFromDate($ano, $mes, 1)->startOfMonth();
+                    $endDate = $startDate->copy()->endOfMonth();
+                    $diasNoMes = $startDate->diffInDays($endDate) + 1;
+                    $mediaDiaria = ($diasNoMes > 0) ? number_format($totalAppointments / $diasNoMes, 2, ',', '.') : '0,00';
 
-                $sessoesPorTerapia = (clone $query)
-                    ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-                    ->select('therapies.name', DB::raw('SUM(appointments.session_number) as total'))
-                    ->groupBy('therapies.name')
-                    ->pluck('total', 'therapies.name');
+                    $sessoesPorTerapia = (clone $query)
+                        ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                        ->select('therapies.name', DB::raw('SUM(appointments.session_number) as total'))
+                        ->groupBy('therapies.name')
+                        ->pluck('total', 'therapies.name');
 
-                // 3. A CORREÇÃO DO ZERO À ESQUERDA PARA O GRÁFICO DO PDF
-                $isSqlite = DB::connection()->getDriverName() === 'sqlite';
-                $evolucaoDiaria = (clone $query)->select(
-                    $isSqlite 
-                        ? DB::raw("strftime('%d', appointment_date) as dia")
-                        : DB::raw("DATE_FORMAT(appointment_date, '%d') as dia"),
-                    DB::raw('SUM(session_number) as total')
-                )
-                ->groupBy('dia')
-                ->pluck('total', 'dia');
-
-                // 4. Buscamos os DADOS DA TABELA principal
-                $resumo = (clone $query)
-                    ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                    ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-                    ->select(
+                    // 3. A CORREÇÃO DO ZERO À ESQUERDA PARA O GRÁFICO DO PDF
+                    $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+                    $evolucaoDiaria = (clone $query)->select(
                         $isSqlite 
-                            ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
-                            : DB::raw("DATE_FORMAT(appointments.appointment_date, '%m/%Y') as reference_month"),
-                        'patients.name as patient_name',
-                        'therapies.name as therapy_name',
-                        DB::raw('SUM(appointments.session_number) as total_sessions')
+                            ? DB::raw("strftime('%d', appointments.appointment_date) as dia")
+                            : DB::raw("DATE_FORMAT(appointments.appointment_date, '%d') as dia"),
+                        DB::raw('SUM(appointments.session_number) as total')
                     )
-                    ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patients.name', 'therapies.name')
-                    ->orderBy('patients.name', 'asc')
-                    ->get();
+                    ->groupBy('dia')
+                    ->pluck('total', 'dia');
 
-                // 5. Injetamos tudo no PDF
-                $pdf = Pdf::loadView('pdf.monthly-summary-pdf', [
-                    'mesSelecionado' => $mes,
-                    'anoSelecionado' => $ano,
-                    'resumo' => $resumo,
-                    'totalSessoes' => $totalSessoes,
-                    'mediaDiaria' => $mediaDiaria,
-                    'sessoesPorTerapia' => $sessoesPorTerapia,
-                    'evolucaoDiaria' => $evolucaoDiaria,
-                ]);
+                    // 4. Buscamos os DADOS DA TABELA principal
+                    $resumo = (clone $query)
+                        ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+                        ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                        ->select(
+                            $isSqlite 
+                                ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
+                                : DB::raw("DATE_FORMAT(appointments.appointment_date, '%m/%Y') as reference_month"),
+                            'patients.name as patient_name',
+                            'therapies.name as therapy_name',
+                            DB::raw('SUM(appointments.session_number) as total_sessions')
+                        )
+                        ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patients.name', 'therapies.name')
+                        ->orderBy('patients.name', 'asc')
+                        ->get();
 
-                return response()->streamDownload(fn () => print($pdf->output()), "relatorio-atendimentos-{$mes}-{$ano}.pdf");
-           })
+                    // 5. Injetamos tudo no PDF
+                    $pdf = Pdf::loadView('pdf.monthly-summary-pdf', [
+                        'mesSelecionado' => $mes,
+                        'anoSelecionado' => $ano,
+                        'resumo' => $resumo,
+                        'totalSessoes' => $totalSessoes,
+                        'mediaDiaria' => $mediaDiaria,
+                        'sessoesPorTerapia' => $sessoesPorTerapia,
+                        'evolucaoDiaria' => $evolucaoDiaria,
+                    ]);
+
+                    return response()->streamDownload(fn () => print($pdf->output()), "relatorio-atendimentos-{$mes}-{$ano}.pdf");
+               })
         ];
     }
 }

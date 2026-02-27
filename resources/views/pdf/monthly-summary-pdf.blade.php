@@ -85,7 +85,7 @@
         </table>
 
         <div class="chart-box">
-            <div class="chart-title">Atendimentos Diários - {{ $mesSelecionado }}/{{ $anoSelecionado }}</div>
+            <div class="chart-title">Sessões Diárias - {{ $mesSelecionado }}/{{ $anoSelecionado }}</div>
             <table class="daily-grid">
                 <tr>
                     @php

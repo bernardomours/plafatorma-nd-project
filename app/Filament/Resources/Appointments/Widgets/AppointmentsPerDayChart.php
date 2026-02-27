@@ -19,7 +19,7 @@ class AppointmentsPerDayChart extends ChartWidget
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
     
-    protected ?string $heading = 'Atendimentos por Dia';
+    protected ?string $heading = 'Sessões por Dia';
     protected ?string $maxHeight = '300px';
 
     // 2. O Receptor: Escuta o gatilho, recebe os dados com proteção null e salva
