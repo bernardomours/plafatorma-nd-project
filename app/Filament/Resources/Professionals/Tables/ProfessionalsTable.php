@@ -93,12 +93,13 @@ class ProfessionalsTable
                     ->label('Filtros')
                     ->slideOver()
                     ->icon('heroicon-m-chevron-down'))
-            ->actions([
-                EditAction::make(),
-                RestoreAction::make()
-                    ->visible(fn () => auth()->user()?->is_admin),
-                ForceDeleteAction::make()
-                    ->visible(fn () => auth()->user()?->is_admin),
+                    ->actions([
+                        EditAction::make()
+                            ->hidden(fn ($record) => $record->trashed()),
+                        RestoreAction::make()
+                            ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
+                        ForceDeleteAction::make()
+                            ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
