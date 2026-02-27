@@ -28,7 +28,7 @@ class AppointmentResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return AppointmentForm::configure($form);
+        return AppointmentForm::configure($schema);
     }
 
     public static function table(Table $table): Table
