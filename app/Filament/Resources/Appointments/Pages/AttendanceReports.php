@@ -7,63 +7,93 @@ use App\Filament\Resources\Appointments\Widgets\AppointmentStats;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsByTypeChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsPerDayChart;
 use App\Models\Appointment;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
-use Filament\Pages\Page;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Concerns\InteractsWithTable;
+use App\Models\Patient;
+use App\Models\Therapy;
+use Filament\Resources\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Table;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Barryvdh\DomPDF\Facade\Pdf;
 
-class AttendanceReports extends Page implements HasTable, HasForms
+class AttendanceReports extends Page implements HasTable
 {
-    use InteractsWithTable;
-    use InteractsWithForms;
+    use InteractsWithTable, InteractsWithForms;
 
     protected static string $resource = AppointmentResource::class;
     protected static ?string $title = 'Relatórios de Atendimento';
     protected string $view = 'filament.resources.appointments.pages.attendance-reports';
 
-    public ?array $data = [];
+    public ?string $mes = null;
+    public ?string $ano = null;
+    public ?string $patient_id = null;
+    public ?string $therapy_id = null;
 
     public function mount(): void
     {
-        // Define as datas padrão no carregamento da página
-        $this->form->fill([
-            'startDate' => now()->startOfMonth(),
-            'endDate' => now()->endOfMonth(),
-        ]);
+        $this->mes = date('m');
+        $this->ano = date('Y');
+        
+        // Se a função fill() estiver disponível na sua versão, ela empurra a data atual para a tela:
+        if (method_exists($this, 'fillSchemas')) {
+             $this->fillSchemas();
+        } elseif (method_exists($this->form, 'fill')) {
+             $this->form->fill();
+        }
     }
 
-    // Define o formulário de filtros
-    public function form(Form $form): Form
+    // 2. O NOVO FORMULÁRIO DE FILTRO NO TOPO
+    public function form(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema
     {
-        return $form
-            ->schema([
-                Section::make('Filtros Globais')
-                    ->columns(2)
+        return $schema
+            ->statePath('')
+            ->components([
+                \Filament\Schemas\Components\Section::make('Filtros Gerenciais')
                     ->schema([
-                        DatePicker::make('startDate')
-                            ->label('Data de Início')
-                            ->default(now()->startOfMonth())
-                            ->reactive(),
+                        Select::make('mes')
+                            ->label('Mês')
+                            ->options([
+                                '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março',
+                                '04' => 'Abril', '05' => 'Maio', '06' => 'Junho',
+                                '07' => 'Julho', '08' => 'Agosto', '09' => 'Setembro',
+                                '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro',
+                            ]),
+                        
+                        Select::make('ano')
+                            ->label('Ano')
+                            ->options(['2025' => '2025', '2026' => '2026', '2027' => '2027']),
 
-                        DatePicker::make('endDate')
-                            ->label('Data de Fim')
-                            ->default(now()->endOfMonth())
-                            ->reactive(),
-                    ])
-            ])
-            ->statePath('data'); 
+                        Select::make('patient_id')
+                            ->label('Paciente')
+                            ->options(\App\Models\Patient::pluck('name', 'id'))
+                            ->searchable(),
+
+                        Select::make('therapy_id')
+                            ->label('Terapia')
+                            ->options(\App\Models\Therapy::pluck('name', 'id'))
+                            ->searchable(),
+                    ])->columns(4)
+            ]);
     }
 
-    // Passa os filtros para os widgets
+    // A MÁGICA DO BOTÃO
+    public function aplicarFiltros(): void
+    {
+        // Dispara o gatilho enviando as variáveis soltas para evitar o erro de BindingResolution
+        $this->dispatch('atualizar-relatorio', 
+            mes: $this->mes, 
+            ano: $this->ano, 
+            patient_id: $this->patient_id, 
+            therapy_id: $this->therapy_id
+        );
+    }
+
     protected function getHeaderWidgets(): array
     {
         return [
@@ -72,49 +102,148 @@ class AttendanceReports extends Page implements HasTable, HasForms
             AppointmentsByTypeChart::class,
         ];
     }
-    
-    // Método para expor os filtros aos widgets
-    public function getFilters(): ?array
+
+    protected function getHeaderWidgetsData(): array
     {
-        return $this->form->getState();
+        return [
+            'mes' => $this->mes ?: date('m'),
+            'ano' => $this->ano ?: date('Y'),
+            'patient_id' => $this->patient_id,
+            'therapy_id' => $this->therapy_id,
+        ];
     }
 
-    // Define a tabela de dados
+    // 3. A TABELA
     public function table(Table $table): Table
     {
+        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+
         return $table
             ->query(
-                // A query agora usa os filtros do formulário
                 Appointment::query()
                     ->join('patients', 'appointments.patient_id', '=', 'patients.id')
                     ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-                    ->when($this->data['startDate'], fn (Builder $query, $date) => $query->whereDate('appointments.appointment_date', '>=', $date))
-                    ->when($this->data['endDate'], fn (Builder $query, $date) => $query->whereDate('appointments.appointment_date', '<=', $date))
+                    // A Tabela agora obedece o formulário do topo:
+                    ->when($this->mes, fn($q) => $q->whereMonth('appointments.appointment_date', $this->mes))
+                    ->when($this->ano, fn($q) => $q->whereYear('appointments.appointment_date', $this->ano))
+                    ->when($this->patient_id, fn($q) => $q->where('appointments.patient_id', $this->patient_id))
+                    ->when($this->therapy_id, fn($q) => $q->where('appointments.therapy_id', $this->therapy_id))
                     ->select(
-                        DB::raw('strftime(\'%m/%Y\', appointment_date) as reference_month'),
+                        $isSqlite 
+                            ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
+                            : DB::raw("DATE_FORMAT(appointments.appointment_date, '%m/%Y') as reference_month"),
                         'patients.name as patient_name',
                         'therapies.name as therapy_name',
-                        DB::raw('SUM(session_number) as total_sessions')
+                        DB::raw('SUM(appointments.session_number) as total_sessions')
                     )
-                    ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patient_name', 'therapy_name')
+                    ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patients.name', 'therapies.name')
                     ->orderBy('reference_month', 'desc')
-                    ->orderBy('patient_name', 'asc')
+                    ->orderBy('patients.name', 'asc')
             )
             ->columns([
-                TextColumn::make('reference_month')->label('MÊS DE REFERÊNCIA'),
-                TextColumn::make('patient_name')->label('PACIENTE'),
-                TextColumn::make('therapy_name')->label('TERAPIA'),
-                TextColumn::make('total_sessions')->label('TOTAL DE SESSÕES'),
-            ])
-            // Removemos os filtros antigos daqui
-            ->filters([])
-            ->actions([])
-            ->bulkActions([]);
+                TextColumn::make('reference_month')->label('MÊS')->sortable(),
+                TextColumn::make('patient_name')->label('PACIENTE')->searchable(),
+                TextColumn::make('therapy_name')->label('TERAPIA')->searchable(),
+                TextColumn::make('total_sessions')->label('TOTAL DE SESSÕES')->sortable(),
+            ]);
     }
 
-    // Oculta a paginação, já que a tabela é um resumo
-    public function isTablePaginationEnabled(): bool
+    public function getTableRecordKey(\Illuminate\Database\Eloquent\Model | array $record): string
     {
-        return false;
+        return data_get($record, 'reference_month') . '-' . data_get($record, 'patient_name') . '-' . data_get($record, 'therapy_name');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('export_pdf')
+                ->label('Exportar para PDF')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('danger')
+                ->form([
+                    \Filament\Forms\Components\Select::make('mes')
+                        ->label('Mês de Referência')
+                        ->options([
+                            '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março',
+                            '04' => 'Abril', '05' => 'Maio', '06' => 'Junho',
+                            '07' => 'Julho', '08' => 'Agosto', '09' => 'Setembro',
+                            '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro',
+                        ])
+                        ->default(date('m'))
+                        ->required(),
+                    
+                    \Filament\Forms\Components\Select::make('ano')
+                        ->label('Ano de Referência')
+                        ->options([
+                            '2025' => '2025', 
+                            '2026' => '2026', 
+                            '2027' => '2027'
+                        ])
+                        ->default(date('Y'))
+                        ->required(),
+               ])
+               ->action(function (array $data) {
+                $mes = $data['mes'];
+                $ano = $data['ano'];
+
+                $query = Appointment::query()
+                    ->whereMonth('appointment_date', $mes)
+                    ->whereYear('appointment_date', $ano);
+
+                $totalSessoes = (clone $query)->sum('session_number');
+                $totalAppointments = (clone $query)->count(); 
+                
+                $startDate = \Carbon\Carbon::createFromDate($ano, $mes, 1)->startOfMonth();
+                $endDate = $startDate->copy()->endOfMonth();
+                $diasNoMes = $startDate->diffInDays($endDate) + 1;
+                $mediaDiaria = ($diasNoMes > 0) ? number_format($totalAppointments / $diasNoMes, 2, ',', '.') : '0,00';
+
+                $sessoesPorTerapia = (clone $query)
+                    ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                    ->select('therapies.name', DB::raw('SUM(appointments.session_number) as total'))
+                    ->groupBy('therapies.name')
+                    ->pluck('total', 'therapies.name');
+
+                $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+                
+                $evolucaoDiaria = (clone $query)->select(
+                    $isSqlite 
+                        ? DB::raw("cast(strftime('%d', appointment_date) as integer) as dia")
+                        : DB::raw("DAY(appointment_date) as dia"),
+                    DB::raw('SUM(session_number) as total')
+                )
+                ->groupBy('dia')
+                ->pluck('total', 'dia');
+
+                // 4. MUDAMOS O NOME DE $dados PARA $resumo E ADICIONAMOS A COLUNA reference_month
+                $resumo = (clone $query)
+                    ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+                    ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                    ->select(
+                        $isSqlite 
+                            ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
+                            : DB::raw("DATE_FORMAT(appointments.appointment_date, '%m/%Y') as reference_month"),
+                        'patients.name as patient_name',
+                        'therapies.name as therapy_name',
+                        DB::raw('SUM(appointments.session_number) as total_sessions')
+                    )
+                    ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patients.name', 'therapies.name')
+                    ->orderBy('patients.name', 'asc')
+                    ->get();
+
+                // 5. Injetamos o $resumo para a tabela funcionar
+                $pdf = Pdf::loadView('pdf.monthly-summary-pdf', [
+                    'mesSelecionado' => $mes,
+                    'anoSelecionado' => $ano,
+                    'resumo' => $resumo, // <-- ALINHADO COM O SEU BLADE
+                    'totalSessoes' => $totalSessoes,
+                    'mediaDiaria' => $mediaDiaria,
+                    'sessoesPorTerapia' => $sessoesPorTerapia,
+                    'evolucaoDiaria' => $evolucaoDiaria,
+                ]);
+
+                return response()->streamDownload(fn () => print($pdf->output()), "relatorio-atendimentos-{$mes}-{$ano}.pdf");
+           })
+        ];
     }
 }
