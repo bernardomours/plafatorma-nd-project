@@ -86,13 +86,13 @@ class AppointmentForm
                     ->seconds(false)
                     ->displayFormat('H:i')
                     ->format('H:i')
-                    ->live()
+                    ->live(onBlur: true)
                     ->afterStateUpdated($updateSessionNumber),
                 Select::make('therapy_id')
                     ->label('Terapia')
                     ->relationship('therapy', 'name')
                     ->required()
-                    ->live()
+                    ->live(onBlur: true)
                     ->afterStateUpdated($updateSessionNumber),
                 Select::make('service_type_id')
                     ->label('Tipo de Atendimento')
