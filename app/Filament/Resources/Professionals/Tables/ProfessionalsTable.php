@@ -2,15 +2,19 @@
 
 namespace App\Filament\Resources\Professionals\Tables;
 
-use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\RestoreAction; 
+use Filament\Actions\ForceDeleteAction; 
+use Filament\Actions\RestoreBulkAction; 
+use Filament\Actions\ForceDeleteBulkAction; 
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter; 
 use Filament\Tables\Enums\FiltersLayout;
 
 class ProfessionalsTable
@@ -79,6 +83,9 @@ class ProfessionalsTable
                     ->preload()
                     ->multiple()
                     ->label('Unidade'),
+                    
+                TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->is_admin),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersTriggerAction(
                 fn ($action) => $action
@@ -88,6 +95,10 @@ class ProfessionalsTable
                     ->icon('heroicon-m-chevron-down'))
             ->actions([
                 EditAction::make(),
+                RestoreAction::make()
+                    ->visible(fn () => auth()->user()?->is_admin),
+                ForceDeleteAction::make()
+                    ->visible(fn () => auth()->user()?->is_admin),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -113,6 +124,12 @@ class ProfessionalsTable
                                 $record->delete();
                             });
                         }),
+                        
+                    // AS TRAVAS ADICIONADAS AQUI:
+                    RestoreBulkAction::make()
+                        ->visible(fn () => auth()->user()?->is_admin),
+                    ForceDeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->is_admin),
                 ]),
             ]);
     }

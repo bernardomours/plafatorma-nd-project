@@ -14,11 +14,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+// 1. ADICIONE ESTES DOIS IMPORTS AQUI NO TOPO:
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProfessionalResource extends Resource
 {
     protected static ?string $model = Professional::class;
-
 
     protected static string|UnitEnum|null $navigationGroup = 'Ocupação';
 
@@ -38,18 +40,20 @@ class ProfessionalResource extends Resource
         return ProfessionalsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [
             //
         ];
     }
-
-    // public static function canViewAny(): bool
-    // {
-    //     // Verifica a coluna 'is_admin' que você criou na migration
-    //     return auth()->user()?->is_admin ?? false;
-    // }
 
     public static function getPages(): array
     {
