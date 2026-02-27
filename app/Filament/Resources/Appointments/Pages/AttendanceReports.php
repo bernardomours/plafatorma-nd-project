@@ -34,6 +34,7 @@ class AttendanceReports extends Page implements HasTable
     public ?string $ano = null;
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
+    public ?array $unidades = [];
 
     public function mount(): void
     {

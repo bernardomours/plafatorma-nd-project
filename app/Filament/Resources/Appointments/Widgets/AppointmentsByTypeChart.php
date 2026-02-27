@@ -89,6 +89,12 @@ class AppointmentsByTypeChart extends ChartWidget
                         'stepSize' => 1,
                     ],
                 ],
+                // ADICIONAMOS A REGRA DO EIXO Y AQUI:
+                'y' => [
+                    'ticks' => [
+                        'autoSkip' => false, // <-- Obriga o gráfico a mostrar TODOS os nomes!
+                    ],
+                ],
             ],
         ];
     }
