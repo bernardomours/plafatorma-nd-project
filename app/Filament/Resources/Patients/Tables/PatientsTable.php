@@ -11,6 +11,11 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Actions\RestoreAction; 
+use Filament\Actions\ForceDeleteAction; 
+use Filament\Actions\RestoreBulkAction; 
+use Filament\Actions\ForceDeleteBulkAction; 
+use Filament\Tables\Filters\TrashedFilter; 
 
 class PatientsTable
 {
@@ -62,7 +67,7 @@ class PatientsTable
                     ->label('Ativo')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->disabled(fn () => ! auth()->user()->is_admin),
+                //   ->disabled(fn () => ! auth()->user()->is_admin),
 
             ])
             ->filters([
@@ -84,6 +89,9 @@ class PatientsTable
                     ->preload()
                     ->multiple()
                     ->label('Convênio'),
+                
+                TrashedFilter::make()
+                    ->visible(fn () => auth()->user()?->is_admin),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('name', 'asc')
             ->filtersTriggerAction(
@@ -92,12 +100,24 @@ class PatientsTable
                     ->label('Filtros')
                     ->slideOver()
                     ->icon('heroicon-m-chevron-down'))
-            ->recordActions([
-                EditAction::make(),
+            ->actions([
+                EditAction::make()
+                    ->hidden(fn ($record) => $record->trashed()),
+                    
+                RestoreAction::make()
+                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
+                    
+                ForceDeleteAction::make()
+                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    
+                    RestoreBulkAction::make()
+                        ->visible(fn () => auth()->user()?->is_admin),
+                    ForceDeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->is_admin),
                 ]),
             ]);
     }

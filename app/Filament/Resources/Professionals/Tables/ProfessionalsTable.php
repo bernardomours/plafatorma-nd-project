@@ -17,6 +17,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter; 
 use Filament\Tables\Enums\FiltersLayout;
 
+
 class ProfessionalsTable
 {
     public static function configure(Table $table): Table
