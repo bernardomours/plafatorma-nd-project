@@ -186,10 +186,13 @@ class AttendanceReports extends Page implements HasTable
                 $mes = $data['mes'];
                 $ano = $data['ano'];
 
+                // 1. Filtramos apenas Mês, Ano e Terapia (sem o paciente, como você pediu)
                 $query = Appointment::query()
                     ->whereMonth('appointment_date', $mes)
-                    ->whereYear('appointment_date', $ano);
+                    ->whereYear('appointment_date', $ano)
+                    ->when($this->therapy_id, fn ($q) => $q->where('therapy_id', $this->therapy_id));
 
+                // 2. Calculamos as ESTATÍSTICAS
                 $totalSessoes = (clone $query)->sum('session_number');
                 $totalAppointments = (clone $query)->count(); 
                 
@@ -204,18 +207,18 @@ class AttendanceReports extends Page implements HasTable
                     ->groupBy('therapies.name')
                     ->pluck('total', 'therapies.name');
 
+                // 3. A CORREÇÃO DO ZERO À ESQUERDA PARA O GRÁFICO DO PDF
                 $isSqlite = DB::connection()->getDriverName() === 'sqlite';
-                
                 $evolucaoDiaria = (clone $query)->select(
                     $isSqlite 
-                        ? DB::raw("cast(strftime('%d', appointment_date) as integer) as dia")
-                        : DB::raw("DAY(appointment_date) as dia"),
+                        ? DB::raw("strftime('%d', appointment_date) as dia")
+                        : DB::raw("DATE_FORMAT(appointment_date, '%d') as dia"),
                     DB::raw('SUM(session_number) as total')
                 )
                 ->groupBy('dia')
                 ->pluck('total', 'dia');
 
-                // 4. MUDAMOS O NOME DE $dados PARA $resumo E ADICIONAMOS A COLUNA reference_month
+                // 4. Buscamos os DADOS DA TABELA principal
                 $resumo = (clone $query)
                     ->join('patients', 'appointments.patient_id', '=', 'patients.id')
                     ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
@@ -231,11 +234,11 @@ class AttendanceReports extends Page implements HasTable
                     ->orderBy('patients.name', 'asc')
                     ->get();
 
-                // 5. Injetamos o $resumo para a tabela funcionar
+                // 5. Injetamos tudo no PDF
                 $pdf = Pdf::loadView('pdf.monthly-summary-pdf', [
                     'mesSelecionado' => $mes,
                     'anoSelecionado' => $ano,
-                    'resumo' => $resumo, // <-- ALINHADO COM O SEU BLADE
+                    'resumo' => $resumo,
                     'totalSessoes' => $totalSessoes,
                     'mediaDiaria' => $mediaDiaria,
                     'sessoesPorTerapia' => $sessoesPorTerapia,
