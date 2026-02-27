@@ -59,6 +59,7 @@ class AppointmentsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('appointment_date', direction:'desc')
             ->filters([
                 SelectFilter::make('patient')
                     ->relationship('patient', 'name')
@@ -108,7 +109,6 @@ class AppointmentsTable
                             );
                     })
             ], layout: FiltersLayout::AboveContentCollapsible)
-            ->defaultSort('appointment_date', 'asc')
             ->filtersTriggerAction(
                 fn ($action) => $action
                     ->button()
