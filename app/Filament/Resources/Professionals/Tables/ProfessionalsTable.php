@@ -84,6 +84,18 @@ class ProfessionalsTable
                     ->preload()
                     ->multiple()
                     ->label('Unidade'),
+                SelectFilter::make('therapy')
+                    ->relationship('therapy', 'name')
+                    ->multiple()
+                    ->label('Especialidade'),
+                SelectFilter::make('role')
+                    ->options([
+                        'therapist'   => 'AT',
+                        'supervisor'  => 'Supervisor',
+                        'coordinator' => 'Coordenador',
+                    ])
+                    ->multiple()
+                    ->label('Cargo/Função'),
                     
                 TrashedFilter::make()
                     ->visible(fn () => auth()->user()?->is_admin),
