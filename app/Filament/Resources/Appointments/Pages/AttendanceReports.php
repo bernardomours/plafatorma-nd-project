@@ -79,7 +79,15 @@ class AttendanceReports extends Page implements HasTable
                             ->label('Terapia')
                             ->options(\App\Models\Therapy::pluck('name', 'id'))
                             ->searchable(),
-                    ])->columns(4)
+                            
+                        Select::make('unidades')
+                            ->label('Unidade(s)')
+                            ->options(\App\Models\Unit::pluck('city', 'id')) // <-- CORRIGIDO AQUI!
+                            ->multiple()
+                            ->searchable()
+                            ->reactive()
+                            ->placeholder('Todas as unidades'),
+                    ])->columns(5),
             ]);
     }
 
@@ -91,7 +99,8 @@ class AttendanceReports extends Page implements HasTable
             mes: $this->mes, 
             ano: $this->ano, 
             patient_id: $this->patient_id, 
-            therapy_id: $this->therapy_id
+            therapy_id: $this->therapy_id,
+            unidades: $this->unidades // <-- CORRIGIDO AQUI (antes estava $this->units_id)
         );
     }
 
@@ -111,6 +120,7 @@ class AttendanceReports extends Page implements HasTable
             'ano' => $this->ano ?: date('Y'),
             'patient_id' => $this->patient_id,
             'therapy_id' => $this->therapy_id,
+            'unidades' => $this->unidades, // Não esqueça de passar as unidades pros widgets depois!
         ];
     }
 
@@ -129,6 +139,8 @@ class AttendanceReports extends Page implements HasTable
                     ->when($this->ano, fn($q) => $q->whereYear('appointments.appointment_date', $this->ano))
                     ->when($this->patient_id, fn($q) => $q->where('appointments.patient_id', $this->patient_id))
                     ->when($this->therapy_id, fn($q) => $q->where('appointments.therapy_id', $this->therapy_id))
+                    // O Filtro de unidades aplicado na tabela!
+                    ->when(!empty($this->unidades), fn($q) => $q->whereHas('patient', fn($queryPaciente) => $queryPaciente->whereIn('unit_id', $this->unidades)))
                     ->select(
                         $isSqlite 
                             ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")

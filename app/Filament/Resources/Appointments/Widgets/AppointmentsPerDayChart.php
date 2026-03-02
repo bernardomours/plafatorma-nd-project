@@ -13,45 +13,43 @@ use Livewire\Attributes\On;
 
 class AppointmentsPerDayChart extends ChartWidget
 {
-    // 1. As variáveis públicas limpas para receber os filtros
     public ?string $mes = null;
     public ?string $ano = null;
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
+    public array $unidades = []; // <-- Propriedade adicionada
     
     protected ?string $heading = 'Sessões por Dia';
     protected ?string $maxHeight = '300px';
 
-    // 2. O Receptor: Escuta o gatilho, recebe os dados com proteção null e salva
     #[On('atualizar-relatorio')]
-    public function atualizarFiltros($mes = null, $ano = null, $patient_id = null, $therapy_id = null): void
+    public function atualizarFiltros($mes = null, $ano = null, $patient_id = null, $therapy_id = null, $unidades = []): void // <-- Parâmetro adicionado
     {
         $this->mes = $mes;
         $this->ano = $ano;
         $this->patient_id = $patient_id;
         $this->therapy_id = $therapy_id;
+        $this->unidades = $unidades; // <-- Valor salvo
     }
     
     protected function getData(): array
     {
-        // 3. Define o mês e ano filtrados ou usa o atual
         $mesFiltrado = $this->mes ?: date('m');
         $anoFiltrado = $this->ano ?: date('Y');
 
-        // 4. Calcula o primeiro e último dia do mês filtrado para desenhar o eixo X
         $startDate = Carbon::createFromDate($anoFiltrado, $mesFiltrado, 1)->startOfMonth();
         $endDate = $startDate->copy()->endOfMonth();
 
-        // 5. Cria a query base aplicando TODOS os filtros
         $query = Appointment::query()
             ->whereMonth('appointment_date', $mesFiltrado)
             ->whereYear('appointment_date', $anoFiltrado)
             ->when($this->patient_id, fn (Builder $q) => $q->where('patient_id', $this->patient_id))
-            ->when($this->therapy_id, fn (Builder $q) => $q->where('therapy_id', $this->therapy_id));
+            ->when($this->therapy_id, fn (Builder $q) => $q->where('therapy_id', $this->therapy_id))
+            // LÓGICA DO FILTRO DE UNIDADES ADICIONADA AO WIDGET
+            ->when(!empty($this->unidades), fn ($q) => $q->whereHas('patient', fn ($pq) => $pq->whereIn('unit_id', $this->unidades)));
 
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';
 
-        // 6. Busca os dados somando as sessões por DIA
         $dadosBanco = $query->select(
             $isSqlite 
                 ? DB::raw("strftime('%d/%m', appointment_date) as dia")
@@ -67,7 +65,6 @@ class AppointmentsPerDayChart extends ChartWidget
         $labels = [];
         $dataset = [];
 
-        // 7. Preenche o gráfico, colocando 0 nos dias que não tiveram atendimento
         foreach ($period as $date) {
             $diaFormatado = $date->format('d/m');
             $labels[] = $diaFormatado;
@@ -98,8 +95,8 @@ class AppointmentsPerDayChart extends ChartWidget
             'scales' => [
                 'x' => [
                     'ticks' => [
-                        'autoSkip' => false, // <-- Obriga a mostrar TODOS os dias
-                        'maxRotation' => 45, // <-- Inclina o texto em 45 graus para caber
+                        'autoSkip' => false,
+                        'maxRotation' => 45,
                         'minRotation' => 45,
                     ],
                 ],
