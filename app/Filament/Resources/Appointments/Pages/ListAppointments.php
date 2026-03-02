@@ -78,7 +78,7 @@ class ListAppointments extends ListRecords
                                 $atendimento->patient->name ?? '-',
                                 $atendimento->appointment_date ? \Carbon\Carbon::parse($atendimento->appointment_date)->format('d/m/Y') : '-',
                                 $atendimento->therapy->name ?? '-',
-                                $atendimento->attendance_type ?? '-',
+                                $atendimento->service_type->name ?? '-',
                                 $atendimento->session_number ?? '0',
                                 $atendimento->check_in ?? '-',
                                 $atendimento->check_out ?? '-',

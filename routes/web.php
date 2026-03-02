@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Models\Appointment;
 use App\Models\Visit;
+use App\Models\Professional;
 
 Route::get('/', function () {
     return redirect('/admin');
@@ -82,7 +83,32 @@ Route::get('/recalculate-visits', function () {
     return $output;
 });
 
-Route::get('/disparar-aniversarios', function () {
-    Artisan::call('app:send-birthday-emails'); // ou 'nucleo:notificar-aniversarios'
-    return 'E-mails de aniversário enviados com sucesso!';
+// Route::get('/disparar-aniversarios', function () {
+//     Artisan::call('app:send-birthday-emails'); // ou 'nucleo:notificar-aniversarios'
+//     return 'E-mails de aniversário enviados com sucesso!';
+// });
+
+Route::get('/gerar-acessos-admin', function () {
+    $criados = 0;
+    
+    Professional::whereIn('role', ['supervisor', 'coordinator'])
+        ->whereNull('user_id')
+        ->whereNotNull('email')
+        ->get()
+        ->each(function ($professional) use (&$criados) {
+            $cpfLimpo = preg_replace('/[^0-9]/', '', $professional->cpf);
+            
+            $user = \App\Models\User::firstOrCreate(
+                ['email' => $professional->email],
+                [
+                    'name' => $professional->name,
+                    'password' => bcrypt($cpfLimpo),
+                ]
+            );
+            
+            $professional->updateQuietly(['user_id' => $user->id]);
+            $criados++;
+        });
+        
+    return "Processo finalizado com sucesso! $criados acesso(s) criado(s).";
 });
