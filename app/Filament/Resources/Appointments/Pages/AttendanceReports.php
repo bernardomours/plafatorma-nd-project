@@ -85,7 +85,6 @@ class AttendanceReports extends Page implements HasTable
                             ->options(\App\Models\Unit::pluck('city', 'id')) // <-- CORRIGIDO AQUI!
                             ->multiple()
                             ->searchable()
-                            ->reactive()
                             ->placeholder('Todas as unidades'),
                     ])->columns(5),
             ]);

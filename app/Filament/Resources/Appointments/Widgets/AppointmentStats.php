@@ -11,11 +11,12 @@ use Livewire\Attributes\On;
 
 class AppointmentStats extends BaseWidget
 {
+    protected ?string $pollingInterval = null;
     public ?string $mes = null;
     public ?string $ano = null;
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
-    public array $unidades = []; // <-- Propriedade adicionada
+    public array $unidades = [];
 
     #[On('atualizar-relatorio')]
     public function atualizarFiltros($mes = null, $ano = null, $patient_id = null, $therapy_id = null, $unidades = []): void // <-- Parâmetro adicionado
@@ -24,7 +25,7 @@ class AppointmentStats extends BaseWidget
         $this->ano = $ano;
         $this->patient_id = $patient_id;
         $this->therapy_id = $therapy_id;
-        $this->unidades = $unidades; // <-- Valor salvo
+        $this->unidades = $unidades;
     }
 
     protected function getStats(): array
