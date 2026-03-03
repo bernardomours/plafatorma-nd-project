@@ -25,6 +25,7 @@ class Appointment extends Model
      * @var array
      */
     protected $fillable = [
+        'guide',
         'appointment_date',
         'check_in',
         'check_out',
