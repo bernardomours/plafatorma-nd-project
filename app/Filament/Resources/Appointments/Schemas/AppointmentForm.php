@@ -82,7 +82,6 @@ class AppointmentForm
                     ->afterStateUpdated($updateSessionNumber),
                 TimePicker::make('check_out')
                     ->label('Check-out')
-                    ->required()
                     ->seconds(false)
                     ->displayFormat('H:i')
                     ->format('H:i')

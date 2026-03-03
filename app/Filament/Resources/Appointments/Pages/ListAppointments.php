@@ -95,7 +95,7 @@ class ListAppointments extends ListRecords
                     ]);
                 }),
 
-                Actions\Action::make('importar_unimed')
+            Actions\Action::make('importar_unimed')
                 ->label('Importar CSV Unimed')
                 ->icon('heroicon-o-document-arrow-up')
                 ->color('warning')
@@ -106,6 +106,7 @@ class ListAppointments extends ListRecords
                         ->options([
                             'Mossoró' => 'Mossoró',
                             'Natal' => 'Natal',
+                            'João Câmara' => 'João Câmara',
                         ])
                         ->required(),
                         
@@ -150,14 +151,14 @@ class ListAppointments extends ListRecords
                             $motivosErroLinha[] = "Data inválida ou em branco";
                         }
             
-                        // 2. Validação de Horários 
+                        // 2. Validação de Horários (AGORA ACEITANDO CHECK-OUT VAZIO)
                         $checkinBruto = trim($row[13] ?? '');
                         $checkoutBruto = trim($row[14] ?? '');
                         $checkIn = explode(' ', $checkinBruto)[1] ?? null;
                         $checkOut = explode(' ', $checkoutBruto)[1] ?? null;
             
                         if (!$checkIn) $motivosErroLinha[] = "Check-in ausente";
-                        if (!$checkOut) $motivosErroLinha[] = "Check-out ausente";
+                        // A trava do check-out foi removida daqui!
             
                         // 3. Mapeamento de Terapias
                         $procedimentoBruto = strtoupper(trim($row[9]));
