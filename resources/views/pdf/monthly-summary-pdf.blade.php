@@ -13,15 +13,12 @@
         .info-container p { margin: 4px 0 0 0; font-size: 11px; color: #7F8C8D; }
         .clear { clear: both; }
         
-        /* WIDGETS DE KPI */
         .widgets-table { width: 100%; margin-bottom: 15px; border-spacing: 8px; border-collapse: separate; }
-        .widget-card { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; vertical-align: top; width: 33%; }
-        .widget-title { font-size: 9px; color: #6B7280; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .widget-card { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; vertical-align: top; width: 24%; }        .widget-title { font-size: 9px; color: #6B7280; text-transform: uppercase; margin-bottom: 6px; display: block; }
         .widget-value { font-size: 18px; font-weight: bold; color: #111827; }
         .widget-list { margin: 4px 0 0 0; padding-left: 12px; font-size: 9px; color: #374151; list-style-type: none; }
         .widget-list li { margin-bottom: 2px; border-bottom: 1px solid #eee; padding-bottom: 2px; }
 
-        /* CAIXA DO GRÁFICO */
         .chart-box { 
             margin-bottom: 15px; 
             padding: 12px; 
@@ -32,14 +29,12 @@
         }
         .chart-title { font-size: 10px; font-weight: bold; color: #374151; margin-bottom: 10px; text-transform: uppercase; border-left: 4px solid #48D1CC; padding-left: 8px; }
 
-        /* GRÁFICO DIÁRIO (COLUNAS VERTICAIS) */
         .daily-grid { width: 100%; border-spacing: 1px; table-layout: fixed; margin-top: 2px; }
         .daily-bar-container { vertical-align: bottom; height: 50px; text-align: center; } 
         .daily-bar { background-color: #48D1CC; width: 85%; border-radius: 1px 1px 0 0; margin: 0 auto; }
         .daily-day-label { font-size: 6px; color: #9CA3AF; padding-top: 2px; border-top: 1px solid #E5E7EB; line-height: 1; }
         .daily-value-label { font-size: 6px; font-weight: bold; color: #48D1CC; margin-bottom: 1px; }
 
-        /* TABELA DE DADOS */
         table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .data-table th { background-color: #48D1CC; color: white; padding: 6px; text-align: left; text-transform: uppercase; font-size: 9px; }
         .data-table td { border-bottom: 1px solid #E5E7EB; padding: 6px; font-size: 9px; }
@@ -78,6 +73,14 @@
                     <ul class="widget-list">
                         @foreach($sessoesPorTerapia as $terapia => $total)
                             <li><strong>{{ $terapia }}:</strong> {{ $total }}</li>
+                        @endforeach
+                    </ul>
+                </td>
+                <td class="widget-card">
+                    <span class="widget-title">Sessões por Convênio</span>
+                    <ul class="widget-list">
+                        @foreach($sessoesPorConvenio as $convenio => $total)
+                            <li><strong>{{ $convenio }}:</strong> {{ $total }}</li>
                         @endforeach
                     </ul>
                 </td>

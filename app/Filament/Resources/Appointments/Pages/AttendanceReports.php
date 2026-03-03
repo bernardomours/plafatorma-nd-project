@@ -6,9 +6,11 @@ use App\Filament\Resources\Appointments\AppointmentResource;
 use App\Filament\Resources\Appointments\Widgets\AppointmentStats;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsByTypeChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsPerDayChart;
+use App\Filament\Resources\Appointments\Widgets\AppointmentsByAgreementChart;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Therapy;
+use App\Models\Agreement;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class AttendanceReports extends Page implements HasTable
 {
@@ -35,13 +38,13 @@ class AttendanceReports extends Page implements HasTable
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
     public ?array $unidades = [];
+    public ?string $agreement_id = null; // <-- NOVO: Variável do Convênio
 
     public function mount(): void
     {
         $this->mes = date('m');
         $this->ano = date('Y');
         
-        // Se a função fill() estiver disponível na sua versão, ela empurra a data atual para a tela:
         if (method_exists($this, 'fillSchemas')) {
              $this->fillSchemas();
         } elseif (method_exists($this->form, 'fill')) {
@@ -49,7 +52,7 @@ class AttendanceReports extends Page implements HasTable
         }
     }
 
-    // 2. O NOVO FORMULÁRIO DE FILTRO NO TOPO
+    // O FORMULÁRIO DE FILTRO NO TOPO
     public function form(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema
     {
         return $schema
@@ -70,36 +73,44 @@ class AttendanceReports extends Page implements HasTable
                             ->label('Ano')
                             ->options(['2025' => '2025', '2026' => '2026', '2027' => '2027']),
 
+                        Select::make('agreement_id') // <-- NOVO: Filtro de Convênio
+                            ->label('Convênio')
+                            ->options(\App\Models\Agreement::pluck('name', 'id'))
+                            ->searchable()
+                            ->placeholder('Todos os convênios'),
+
                         Select::make('patient_id')
                             ->label('Paciente')
                             ->options(\App\Models\Patient::pluck('name', 'id'))
-                            ->searchable(),
+                            ->searchable()
+                            ->placeholder('Todos os pacientes'),
 
                         Select::make('therapy_id')
                             ->label('Terapia')
                             ->options(\App\Models\Therapy::pluck('name', 'id'))
-                            ->searchable(),
+                            ->searchable()
+                            ->placeholder('Todas as terapias'),
                             
                         Select::make('unidades')
                             ->label('Unidade(s)')
-                            ->options(\App\Models\Unit::pluck('city', 'id')) // <-- CORRIGIDO AQUI!
+                            ->options(\App\Models\Unit::pluck('city', 'id')) 
                             ->multiple()
                             ->searchable()
                             ->placeholder('Todas as unidades'),
-                    ])->columns(5),
+                            
+                    ])->columns(3), // <-- Alterado de 5 para 3 para criar duas linhas organizadas
             ]);
     }
 
-    // A MÁGICA DO BOTÃO
     public function aplicarFiltros(): void
     {
-        // Dispara o gatilho enviando as variáveis soltas para evitar o erro de BindingResolution
         $this->dispatch('atualizar-relatorio', 
             mes: $this->mes, 
             ano: $this->ano, 
             patient_id: $this->patient_id, 
             therapy_id: $this->therapy_id,
-            unidades: $this->unidades // <-- CORRIGIDO AQUI (antes estava $this->units_id)
+            unidades: $this->unidades,
+            agreement_id: $this->agreement_id // <-- NOVO: Enviando para os gráficos
         );
     }
 
@@ -109,6 +120,7 @@ class AttendanceReports extends Page implements HasTable
             AppointmentStats::class,
             AppointmentsPerDayChart::class,
             AppointmentsByTypeChart::class,
+            AppointmentsByAgreementChart::class,
         ];
     }
 
@@ -119,11 +131,12 @@ class AttendanceReports extends Page implements HasTable
             'ano' => $this->ano ?: date('Y'),
             'patient_id' => $this->patient_id,
             'therapy_id' => $this->therapy_id,
-            'unidades' => $this->unidades, // Não esqueça de passar as unidades pros widgets depois!
+            'unidades' => $this->unidades, 
+            'agreement_id' => $this->agreement_id, // <-- NOVO: Disponibilizando para os gráficos
         ];
     }
 
-    // 3. A TABELA
+    // A TABELA
     public function table(Table $table): Table
     {
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';
@@ -133,13 +146,13 @@ class AttendanceReports extends Page implements HasTable
                 Appointment::query()
                     ->join('patients', 'appointments.patient_id', '=', 'patients.id')
                     ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-                    // A Tabela agora obedece o formulário do topo:
                     ->when($this->mes, fn($q) => $q->whereMonth('appointments.appointment_date', $this->mes))
                     ->when($this->ano, fn($q) => $q->whereYear('appointments.appointment_date', $this->ano))
                     ->when($this->patient_id, fn($q) => $q->where('appointments.patient_id', $this->patient_id))
                     ->when($this->therapy_id, fn($q) => $q->where('appointments.therapy_id', $this->therapy_id))
-                    // O Filtro de unidades aplicado na tabela!
                     ->when(!empty($this->unidades), fn($q) => $q->whereHas('patient', fn($queryPaciente) => $queryPaciente->whereIn('unit_id', $this->unidades)))
+                    // <-- NOVO: O Filtro de Convênio aplicado na tabela!
+                    ->when($this->agreement_id, fn($q) => $q->whereHas('patient', fn($queryPaciente) => $queryPaciente->where('agreement_id', $this->agreement_id)))
                     ->select(
                         $isSqlite 
                             ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
@@ -194,25 +207,34 @@ class AttendanceReports extends Page implements HasTable
                         ->default(date('Y'))
                         ->required(),
 
-                    // O NOVO CAMPO DE UNIDADES COM MÚLTIPLA ESCOLHA
+                    // <-- NOVO: Adicionado também no PDF
+                    \Filament\Forms\Components\Select::make('agreement_id')
+                        ->label('Convênio')
+                        ->options(\App\Models\Agreement::pluck('name', 'id'))
+                        ->searchable()
+                        ->placeholder('Todos os convênios'),
+
                     \Filament\Forms\Components\Select::make('unidades')
                         ->label('Unidade(s)')
-                        ->options(\App\Models\Unit::pluck('city', 'id')) // Puxa os nomes das unidades
-                        ->multiple() // A mágica que permite escolher mais de uma!
+                        ->options(\App\Models\Unit::pluck('city', 'id')) 
+                        ->multiple() 
                         ->searchable()
                         ->placeholder('Todas as unidades'),
                ])
                ->action(function (array $data) {
                     $mes = $data['mes'];
                     $ano = $data['ano'];
-                    $unidades = $data['unidades'] ?? []; // Pega o array de unidades (ou vazio se não escolher nenhuma)
+                    $unidades = $data['unidades'] ?? []; 
+                    $agreementId = $data['agreement_id'] ?? null;
 
-                    // 1. Filtramos Mês, Ano, e as Unidades selecionadas
+                    // 1. Filtramos Mês, Ano, Unidades e Convênio
                     $query = Appointment::query()
                         ->whereMonth('appointments.appointment_date', $mes)
                         ->whereYear('appointments.appointment_date', $ano)
                         ->when($this->therapy_id, fn ($q) => $q->where('appointments.therapy_id', $this->therapy_id))
-                        ->when(!empty($unidades), fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->whereIn('unit_id', $unidades)));
+                        ->when(!empty($unidades), fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->whereIn('unit_id', $unidades)))
+                        // <-- NOVO: Filtro aplicado aos números do PDF
+                        ->when($agreementId, fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->where('agreement_id', $agreementId)));
 
                     // 2. Calculamos as ESTATÍSTICAS
                     $totalSessoes = (clone $query)->sum('session_number');
@@ -228,6 +250,13 @@ class AttendanceReports extends Page implements HasTable
                         ->select('therapies.name', DB::raw('SUM(appointments.session_number) as total'))
                         ->groupBy('therapies.name')
                         ->pluck('total', 'therapies.name');
+
+                    $sessoesPorConvenio = (clone $query)
+                        ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+                        ->join('agreements', 'patients.agreement_id', '=', 'agreements.id')
+                        ->select('agreements.name', DB::raw('SUM(appointments.session_number) as total'))
+                        ->groupBy('agreements.name')
+                        ->pluck('total', 'agreements.name');
 
                     // 3. A CORREÇÃO DO ZERO À ESQUERDA PARA O GRÁFICO DO PDF
                     $isSqlite = DB::connection()->getDriverName() === 'sqlite';
@@ -264,6 +293,7 @@ class AttendanceReports extends Page implements HasTable
                         'totalSessoes' => $totalSessoes,
                         'mediaDiaria' => $mediaDiaria,
                         'sessoesPorTerapia' => $sessoesPorTerapia,
+                        'sessoesPorConvenio' => $sessoesPorConvenio,
                         'evolucaoDiaria' => $evolucaoDiaria,
                     ]);
 

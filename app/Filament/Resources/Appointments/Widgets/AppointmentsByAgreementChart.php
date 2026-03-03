@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 
-class AppointmentsByTypeChart extends ChartWidget
+class AppointmentsByAgreementChart extends ChartWidget
 {
     protected ?string $pollingInterval = null;
     public ?string $mes = null;
@@ -16,9 +16,9 @@ class AppointmentsByTypeChart extends ChartWidget
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
     public array $unidades = [];
-    public ?string $agreement_id = null; // <-- NOVO: Variável do Convênio adicionada
+    public ?string $agreement_id = null;
 
-    protected ?string $heading = 'Ranking de Atendimentos por Terapia';
+    protected ?string $heading = 'Ranking de Atendimentos por Convênio';
     protected ?string $maxHeight = '300px';
 
     #[On('atualizar-relatorio')]
@@ -29,7 +29,7 @@ class AppointmentsByTypeChart extends ChartWidget
         $this->patient_id = $patient_id;
         $this->therapy_id = $therapy_id;
         $this->unidades = $unidades;
-        $this->agreement_id = $agreement_id; // <-- Salvando o valor recebido
+        $this->agreement_id = $agreement_id;
     }
 
     protected function getData(): array
@@ -37,19 +37,20 @@ class AppointmentsByTypeChart extends ChartWidget
         $mesFiltrado = $this->mes ?: date('m');
         $anoFiltrado = $this->ano ?: date('Y');
 
+        // Para pegar o nome do convênio, precisamos fazer JOIN com pacientes e depois com agreements
         $query = Appointment::query()
-            ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+            ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+            ->join('agreements', 'patients.agreement_id', '=', 'agreements.id')
             ->whereMonth('appointments.appointment_date', $mesFiltrado)
             ->whereYear('appointments.appointment_date', $anoFiltrado)
-            ->when($this->patient_id, fn (Builder $q) => $q->where('appointments.patient_id', $this->patient_id))
-            ->when($this->therapy_id, fn (Builder $q) => $q->where('appointments.therapy_id', $this->therapy_id))
-            ->when(!empty($this->unidades), fn ($q) => $q->whereHas('patient', fn ($pq) => $pq->whereIn('unit_id', $this->unidades)))
-            // <-- NOVO: Aplica o filtro na query (procurando o convênio dentro do cadastro do paciente)
-            ->when($this->agreement_id, fn ($q) => $q->whereHas('patient', fn ($pq) => $pq->where('agreement_id', $this->agreement_id)));
+            ->when($this->patient_id, fn ($q) => $q->where('appointments.patient_id', $this->patient_id))
+            ->when($this->therapy_id, fn ($q) => $q->where('appointments.therapy_id', $this->therapy_id))
+            ->when(!empty($this->unidades), fn ($q) => $q->whereIn('patients.unit_id', $this->unidades))
+            ->when($this->agreement_id, fn ($q) => $q->where('patients.agreement_id', $this->agreement_id));
 
         $data = $query
-            ->select('therapies.name', DB::raw('SUM(appointments.session_number) as count'))
-            ->groupBy('therapies.name')
+            ->select('agreements.name', DB::raw('SUM(appointments.session_number) as count'))
+            ->groupBy('agreements.name')
             ->orderByDesc('count')
             ->get();
 
@@ -62,9 +63,9 @@ class AppointmentsByTypeChart extends ChartWidget
                     'label' => 'Qtd de Atendimentos',
                     'data' => $counts,
                     'backgroundColor' => [
-                        '#48D1CC', '#40E0D0', '#76D7C4', '#A2D9CE', 
-                        '#A3E4D7', '#D1F2EB', '#E8F8F5'
-                    ],
+                        '#FF9F40', '#FFCD56', '#4BC0C0', '#36A2EB', 
+                        '#9966FF', '#FF6384', '#C9CBCF'
+                    ], // Cores diferentes para destacar do gráfico de terapias
                 ],
             ],
             'labels' => $labels,
@@ -73,13 +74,13 @@ class AppointmentsByTypeChart extends ChartWidget
 
     protected function getType(): string
     {
-        return 'bar';
+        return 'bar'; // Gráfico de barras
     }
 
     protected function getOptions(): array
     {
         return [
-            'indexAxis' => 'y',
+            'indexAxis' => 'y', // Deixa as barras deitadas (horizontal)
             'plugins' => [
                 'legend' => [
                     'display' => false,
