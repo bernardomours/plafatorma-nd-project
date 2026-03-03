@@ -219,12 +219,20 @@ class ListAppointments extends ListRecords
 
                             $patient = $pacientesFiltrados->first(function($p) use ($patientSlugCsv) {
                                 $dbSlug = \Illuminate\Support\Str::slug($p->name);
-                                return str_contains($dbSlug, $patientSlugCsv) || str_contains($patientSlugCsv, $dbSlug);
+                                if (str_contains($dbSlug, $patientSlugCsv) || str_contains($patientSlugCsv, $dbSlug)) {
+                                    return true;
+                                }
+                                similar_text($dbSlug, $patientSlugCsv, $porcentagem);
+                                return $porcentagem >= 85;
                             });
 
                             $professional = $todosProfissionais->first(function($pro) use ($professionalSlugCsv) {
                                 $dbSlug = \Illuminate\Support\Str::slug($pro->name);
-                                return str_contains($dbSlug, $professionalSlugCsv) || str_contains($professionalSlugCsv, $dbSlug);
+                                if (str_contains($dbSlug, $professionalSlugCsv) || str_contains($professionalSlugCsv, $dbSlug)) {
+                                    return true;
+                                }
+                                similar_text($dbSlug, $professionalSlugCsv, $porcentagem);
+                                return $porcentagem >= 85;
                             });
 
                             if (!$patient) {
