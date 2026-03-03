@@ -99,6 +99,7 @@ class ListAppointments extends ListRecords
                     ->label('Importar CSV Unimed')
                     ->icon('heroicon-o-document-arrow-up')
                     ->color('warning')
+                    ->visible(fn (): bool => auth()->user()->is_admin)
                     ->form([
                         Select::make('unidade_relatorio')
                             ->label('Unidade do Relatório')
