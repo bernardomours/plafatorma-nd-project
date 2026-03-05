@@ -20,6 +20,7 @@ class MonthlySummaryTable extends BaseWidget
 {
     protected static ?string $heading = 'Resumo Mensal de Sessões';
     protected int | string | array $columnSpan = 'full';
+    protected static ?string $pollingInterval = null;
 
     public function table(Table $table): Table
     {
