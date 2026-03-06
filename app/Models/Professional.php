@@ -61,6 +61,11 @@ class Professional extends Model
         return $this->belongsTo(Therapy::class);
     }
 
+    public function movementHistories()
+    {
+        return $this->morphMany(MovementHistory::class, 'moveable');
+    }
+
     protected static function booted(): void
     {
         static::addGlobalScope(new \App\Models\Scopes\UnitScope);

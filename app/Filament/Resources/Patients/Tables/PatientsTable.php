@@ -16,6 +16,10 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreBulkAction; 
 use Filament\Actions\ForceDeleteBulkAction; 
 use Filament\Tables\Filters\TrashedFilter; 
+use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Illuminate\Database\Eloquent\Collection; // <-- IMPORTANTE: Adicionado para a ação em massa funcionar
 
 class PatientsTable
 {
@@ -63,21 +67,16 @@ class PatientsTable
                     ->timezone('America/Fortaleza')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                ToggleColumn::make('is_active')
-                    ->label('Ativo')
-                    ->onColor('success')
-                    ->offColor('danger')
-                //   ->disabled(fn () => ! auth()->user()->is_admin),
-
+                TextColumn::make('status_visual')
+                    ->label('Status')
+                    ->state(fn ($record) => $record->trashed() ? 'Inativo' : 'Ativo')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Ativo' => 'success',
+                        'Inativo' => 'danger',
+                    }),
             ])
             ->filters([
-                TernaryFilter::make('is_active')
-                    ->label('Status de Atendimento')
-                    ->placeholder('Todos os Pacientes')
-                    ->trueLabel('Apenas Ativos')
-                    ->falseLabel('Apenas Inativos')
-                    ->default(true),
-
                 SelectFilter::make('unit')
                     ->relationship('unit', 'city')
                     ->preload()
@@ -104,15 +103,108 @@ class PatientsTable
                 EditAction::make()
                     ->hidden(fn ($record) => $record->trashed()),
                     
+                // 1. O BOTÃO DE "EXCLUIR" CUSTOMIZADO (Alta/Saída - Linha Única)
+                DeleteAction::make()
+                    ->label('Registrar Saída')
+                    ->modalHeading('Registrar Saída do Paciente')
+                    ->modalDescription('O paciente ficará inativo no sistema. Por favor, informe o motivo da saída abaixo.')
+                    ->icon('heroicon-o-arrow-right-start-on-rectangle')
+                    ->form([
+                        Select::make('motivo_saida')
+                            ->label('Motivo principal')
+                            ->options([
+                                'Alta' => 'Alta',
+                                'Suspensão' => 'Suspensão',
+                                'Solicitação do Responsável' => 'Solicitação do Responsável',
+                            ])
+                            ->required(),
+                            
+                        Textarea::make('observacao')
+                            ->label('Observação adicional (opcional)')
+                            ->placeholder('Detalhes sobre a alta ou saída...')
+                            ->rows(3),
+                    ])
+                    ->after(function (\App\Models\Patient $record, array $data) {
+                        $motivoCompleto = $data['motivo_saida'];
+                        if (!empty($data['observacao'])) {
+                            $motivoCompleto .= ' - ' . $data['observacao'];
+                        }
+
+                        // Salva na nossa linha do tempo!
+                        $record->movementHistories()->create([
+                            'action' => 'Saída', 
+                            'reason' => $motivoCompleto,
+                            'date' => now(),
+                            'user_id' => auth()->id(),
+                        ]);
+                    }),
+                    
+                // 2. O BOTÃO DE "RESTAURAR" CUSTOMIZADO (Retorno - Linha Única)
                 RestoreAction::make()
-                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
+                    ->label('Registrar Retorno')
+                    ->modalHeading('Reativar Paciente')
+                    ->icon('heroicon-o-arrow-path-rounded-square')
+                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed())
+                    ->form([
+                        Textarea::make('motivo_retorno')
+                            ->label('Motivo do Retorno')
+                            ->placeholder('Ex: Paciente retornou após 2 meses de suspensão para nova avaliação...')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->after(function (\App\Models\Patient $record, array $data) {
+                        // Salva o retorno na linha do tempo!
+                        $record->movementHistories()->create([
+                            'action' => 'Retorno',
+                            'reason' => $data['motivo_retorno'],
+                            'date' => now(),
+                            'user_id' => auth()->id(),
+                        ]);
+                    }),
                     
                 ForceDeleteAction::make()
                     ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    
+                    // 3. AÇÃO EM MASSA TURBINADA (Excluir vários pelo quadradinho)
+                    DeleteBulkAction::make()
+                        ->label('Registrar Saída')
+                        ->modalHeading('Registrar Saída do(s) Paciente(s)')
+                        ->modalDescription('Os pacientes selecionados ficarão inativos no sistema. O motivo abaixo será aplicado a TODOS eles.')
+                        ->icon('heroicon-o-arrow-right-start-on-rectangle')
+                        ->form([
+                            Select::make('motivo_saida')
+                                ->label('Motivo principal')
+                                ->options([
+                                    'Alta' => 'Alta',
+                                    'Suspensão' => 'Suspensão',
+                                    'Solicitação do Responsável' => 'Solicitação do Responsável',
+                                ])
+                                ->required(),
+                                
+                            Textarea::make('observacao')
+                                ->label('Observação adicional (opcional)')
+                                ->placeholder('Detalhes sobre a alta ou saída...')
+                                ->rows(3),
+                        ])
+                        ->after(function (Collection $records, array $data) {
+                            $motivoCompleto = $data['motivo_saida'];
+                            if (!empty($data['observacao'])) {
+                                $motivoCompleto .= ' - ' . $data['observacao'];
+                            }
+
+                            // Laço para salvar no histórico de CADA UM dos pacientes selecionados
+                            foreach ($records as $record) {
+                                $record->movementHistories()->create([
+                                    'action' => 'Saída', 
+                                    'reason' => $motivoCompleto,
+                                    'date' => now(),
+                                    'user_id' => auth()->id(),
+                                ]);
+                            }
+                        }),
                     
                     RestoreBulkAction::make()
                         ->visible(fn () => auth()->user()?->is_admin),

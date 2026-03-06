@@ -57,7 +57,7 @@ class PatientResource extends Resource
                         ->color('success')
                         ->url(fn (Patient $record): string => static::getUrl('services', ['record' => $record]))
                         ->disabled(fn ($record) => !$record->is_active),
-                    DeleteAction::make(),
+                    //DeleteAction::make(),
                 ])
                 
                 ->icon('heroicon-m-ellipsis-vertical') 

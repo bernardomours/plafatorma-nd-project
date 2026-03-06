@@ -47,6 +47,11 @@ class Patient extends Model
         ];
     }
 
+    public function movementHistories()
+    {
+        return $this->morphMany(MovementHistory::class, 'moveable');
+    }
+
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);

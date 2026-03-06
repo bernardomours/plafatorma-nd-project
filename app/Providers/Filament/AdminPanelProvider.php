@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Plataforma ND')
             ->favicon(url('/images/favicon.png'))
             ->login()
+            ->profile(\App\Filament\Pages\CustomProfile::class)
             ->colors([
                 'primary' => Color::hex('#014bde'),
             ])

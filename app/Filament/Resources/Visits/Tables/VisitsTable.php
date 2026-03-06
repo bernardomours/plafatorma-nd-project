@@ -63,6 +63,20 @@ class VisitsTable
                     )
                     ->searchable()
                     ->preload(),
+                SelectFilter::make('unidade')
+                    ->label('Unidade')
+                    ->options(\App\Models\Unit::pluck('city', 'id'))
+                    ->searchable()
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) {
+                            return $query;
+                        }
+            
+                        // Vai até o paciente daquela coordenação e filtra pela unidade escolhida
+                        return $query->whereHas('patient', function (Builder $q) use ($data) {
+                            $q->where('unit_id', $data['value']);
+                        });
+                    }),
             ],layout: FiltersLayout::AboveContentCollapsible)
             ->filtersTriggerAction(
                 fn ($action) => $action
