@@ -41,30 +41,44 @@ class VisitResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
+        // 1. Catraca VIP para o Admin
         if (auth()->user()?->is_admin) {
             return $query;
         }
 
         $user = auth()->user();
-        $userUnitId = $user->unit_id ?? $user->professional?->unit_id;
         
+        // 2. Tenta pegar a unidade direto da tabela de usuários
+        $userUnitId = $user->unit_id;
+
+        // 3. Se estiver vazio, caçamos o profissional pelo EMAIL dele!
         if (!$userUnitId) {
-            return $query->whereRaw('1 = 0');
+            $profissional = \App\Models\Professional::where('email', $user->email)->first();
+            $userUnitId = $profissional?->unit_id;
+        }
+        
+        // 4. Se o cara logado não for admin, não tiver unidade e não for um profissional cadastrado... barra tudo.
+        if (!$userUnitId) {
+            return $query->whereRaw('1 = 0'); 
         }
 
-        if ($userUnitId == 1) {
+        // --- AS REGRAS OFICIAIS DE IDs ---
+        
+        // Mossoró é o ID 1
+        if ($userUnitId == 1) { 
             $unidadesPermitidas = [1];
         } else {
-            $unidadesPermitidas = [2, 3, 4]; //
+            // Região de Natal (e as outras) são os IDs 2, 3 e 4
+            $unidadesPermitidas = [2, 3, 4]; 
         }
 
+        // 5. A trava raiz direto no banco (imune a linhas fantasmas)
         return $query->whereIn('patient_id', function ($subquery) use ($unidadesPermitidas) {
             $subquery->select('id')
                      ->from('patients')
                      ->whereIn('unit_id', $unidadesPermitidas);
         });
     }
-
     /**
      * @return array<int, class-string|string>|
      */
