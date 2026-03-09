@@ -90,7 +90,7 @@ class PatientsTable
                     ->label('Convênio'),
                 
                 TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->is_admin),
+                //    ->visible(fn () => auth()->user()?->is_admin),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('name', 'asc')
             ->filtersTriggerAction(
@@ -103,7 +103,6 @@ class PatientsTable
                 EditAction::make()
                     ->hidden(fn ($record) => $record->trashed()),
                     
-                // 1. O BOTÃO DE "EXCLUIR" CUSTOMIZADO (Alta/Saída - Linha Única)
                 DeleteAction::make()
                     ->label('Registrar Saída')
                     ->modalHeading('Registrar Saída do Paciente')
@@ -129,8 +128,6 @@ class PatientsTable
                         if (!empty($data['observacao'])) {
                             $motivoCompleto .= ' - ' . $data['observacao'];
                         }
-
-                        // Salva na nossa linha do tempo!
                         $record->movementHistories()->create([
                             'action' => 'Saída', 
                             'reason' => $motivoCompleto,
@@ -138,8 +135,6 @@ class PatientsTable
                             'user_id' => auth()->id(),
                         ]);
                     }),
-                    
-                // 2. O BOTÃO DE "RESTAURAR" CUSTOMIZADO (Retorno - Linha Única)
                 RestoreAction::make()
                     ->label('Registrar Retorno')
                     ->modalHeading('Reativar Paciente')
@@ -153,7 +148,6 @@ class PatientsTable
                             ->rows(3),
                     ])
                     ->after(function (\App\Models\Patient $record, array $data) {
-                        // Salva o retorno na linha do tempo!
                         $record->movementHistories()->create([
                             'action' => 'Retorno',
                             'reason' => $data['motivo_retorno'],
@@ -167,8 +161,6 @@ class PatientsTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    
-                    // 3. AÇÃO EM MASSA TURBINADA (Excluir vários pelo quadradinho)
                     DeleteBulkAction::make()
                         ->label('Registrar Saída')
                         ->modalHeading('Registrar Saída do(s) Paciente(s)')
@@ -194,8 +186,6 @@ class PatientsTable
                             if (!empty($data['observacao'])) {
                                 $motivoCompleto .= ' - ' . $data['observacao'];
                             }
-
-                            // Laço para salvar no histórico de CADA UM dos pacientes selecionados
                             foreach ($records as $record) {
                                 $record->movementHistories()->create([
                                     'action' => 'Saída', 

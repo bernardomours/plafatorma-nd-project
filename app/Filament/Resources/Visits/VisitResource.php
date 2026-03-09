@@ -41,26 +41,25 @@ class VisitResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // 1. Libera tudo se for o Administrador Geral
         if (auth()->user()?->is_admin) {
             return $query;
         }
 
-        // 2. Define as unidades do usuário logado
         $userUnitId = auth()->user()?->unit_id;
         
-        // ATENÇÃO: Troque os números 4, 1, 2 e 3 pelos IDs reais das suas unidades!
-        if ($userUnitId == 1) { 
-            $unidadesPermitidas = [1];
-        } else {
+        if (in_array($userUnitId, [2, 3, 4])) {
             $unidadesPermitidas = [2, 3, 4];
+        } else {
+            $unidadesPermitidas = [$userUnitId]; 
         }
 
-        // 3. A super trava:
-        return $query->whereHas('patient', function (Builder $q) use ($unidadesPermitidas) {
-            $q->withoutGlobalScopes() // Ignora o UnitScope do Patient (impede que o Laravel se confunda)
-              ->withTrashed() // Ignora a Lixeira (garante que visitas de pacientes de alta continuem visíveis)
-              ->whereIn('unit_id', $unidadesPermitidas); // Trava a exibição pela unidade exata
+        // 3. A Trava "Raiz"
+        // Em vez de usar as relações do Model, vamos direto na tabela do banco.
+        // Isso impede que qualquer SoftDelete ou UnitScope crie linhas fantasmas.
+        return $query->whereIn('patient_id', function ($subquery) use ($unidadesPermitidas) {
+            $subquery->select('id')
+                     ->from('patients')
+                     ->whereIn('unit_id', $unidadesPermitidas);
         });
     }
 
