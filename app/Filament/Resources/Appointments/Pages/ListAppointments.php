@@ -152,16 +152,15 @@ class ListAppointments extends ListRecords
                         }
             
                         // 2. Validação de Horários (AGORA ACEITANDO CHECK-OUT VAZIO)
-                        $checkinBruto = trim($row[13] ?? '');
-                        $checkoutBruto = trim($row[14] ?? '');
+                        $checkinBruto = trim($row[12] ?? '');
+                        $checkoutBruto = trim($row[13] ?? '');
                         $checkIn = explode(' ', $checkinBruto)[1] ?? null;
                         $checkOut = explode(' ', $checkoutBruto)[1] ?? null;
             
                         if (!$checkIn) $motivosErroLinha[] = "Check-in ausente";
-                        // A trava do check-out foi removida daqui!
             
                         // 3. Mapeamento de Terapias
-                        $procedimentoBruto = strtoupper(trim($row[9]));
+                        $procedimentoBruto = strtoupper(trim($row[16]));
                         $terapiaNome = 'INDEFINIDA';
                         $tipoAtendimentoNome = 'Clínica'; 
             
@@ -201,7 +200,7 @@ class ListAppointments extends ListRecords
             
                         // 4. Validação de Nomes (Convênio + Unidade + Match Parcial Inteligente)
                         $patientNameCsv = trim($row[6]);
-                        $professionalNameCsv = trim($row[11]);
+                        $professionalNameCsv = trim($row[10]);
                         
                         $patientSlugCsv = \Illuminate\Support\Str::slug($patientNameCsv);
                         $professionalSlugCsv = \Illuminate\Support\Str::slug($professionalNameCsv);
@@ -284,7 +283,7 @@ class ListAppointments extends ListRecords
                         }
             
                         // 5. Salva no banco (Lógica de Guia Opcional)
-                        $sessionNumber = isset($row[10]) ? (int) trim($row[10]) : 1; 
+                        $sessionNumber = isset($row[9]) ? (int) trim($row[9]) : 1; 
             
                         try {
                             if (!empty($numeroGuia)) {
