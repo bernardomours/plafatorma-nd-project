@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::table('visits', function (Blueprint $table) {
             $table->date('happened_at')->nullable()->change();
-            DB::statement("UPDATE visits SET happened_at = NULL WHERE happened_at < '2000-01-01'");
         });
+        
+        DB::statement("UPDATE visits SET happened_at = NULL WHERE happened_at < '2000-01-01'");
     }
 
     /**
