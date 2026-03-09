@@ -51,34 +51,38 @@ class VisitResource extends Resource
         // 2. Tenta pegar a unidade direto da tabela de usuários
         $userUnitId = $user->unit_id;
 
-        // 3. Se estiver vazio, caçamos o profissional pelo EMAIL dele!
+        // 3. Se estiver vazio, caçamos o profissional ignorando os Scopes de segurança temporariamente!
         if (!$userUnitId) {
-            $profissional = \App\Models\Professional::where('email', $user->email)->first();
+            $profissional = \App\Models\Professional::withoutGlobalScopes()
+                                ->where('email', $user->email)
+                                ->first();
+                                
             $userUnitId = $profissional?->unit_id;
         }
         
-        // 4. Se o cara logado não for admin, não tiver unidade e não for um profissional cadastrado... barra tudo.
+        // 4. Se não achou unidade nenhuma, esconde tudo por segurança
         if (!$userUnitId) {
             return $query->whereRaw('1 = 0'); 
         }
 
         // --- AS REGRAS OFICIAIS DE IDs ---
         
-        // Mossoró é o ID 1
+        // ID 1 = Mossoró
         if ($userUnitId == 1) { 
             $unidadesPermitidas = [1];
         } else {
-            // Região de Natal (e as outras) são os IDs 2, 3 e 4
+            // IDs 2, 3 e 4 = Região de Natal e outras
             $unidadesPermitidas = [2, 3, 4]; 
         }
 
-        // 5. A trava raiz direto no banco (imune a linhas fantasmas)
+        // 5. A trava "Raiz" direto no banco (Imune a linhas fantasmas e bloqueios do UnitScope)
         return $query->whereIn('patient_id', function ($subquery) use ($unidadesPermitidas) {
             $subquery->select('id')
                      ->from('patients')
                      ->whereIn('unit_id', $unidadesPermitidas);
         });
     }
+
     /**
      * @return array<int, class-string|string>|
      */
