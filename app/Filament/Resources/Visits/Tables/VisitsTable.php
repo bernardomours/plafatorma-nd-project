@@ -32,7 +32,7 @@ class VisitsTable
                     ->sortable(),
                 TextColumn::make('happened_at')
                     ->label('Realizada em')
-                    ->dateTime('d/m/Y H:i')
+                    ->dateTime('d/m/Y')
                     ->sortable(),
                 BadgeColumn::make('type')
                     ->label('Tipo'),
