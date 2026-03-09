@@ -45,17 +45,19 @@ class VisitResource extends Resource
             return $query;
         }
 
-        $userUnitId = auth()->user()?->unit_id;
+        $user = auth()->user();
+        $userUnitId = $user->unit_id ?? $user->professional?->unit_id;
         
-        if (in_array($userUnitId, [2, 3, 4])) {
-            $unidadesPermitidas = [2, 3, 4];
-        } else {
-            $unidadesPermitidas = [$userUnitId]; 
+        if (!$userUnitId) {
+            return $query->whereRaw('1 = 0');
         }
 
-        // 3. A Trava "Raiz"
-        // Em vez de usar as relações do Model, vamos direto na tabela do banco.
-        // Isso impede que qualquer SoftDelete ou UnitScope crie linhas fantasmas.
+        if ($userUnitId == 1) {
+            $unidadesPermitidas = [1];
+        } else {
+            $unidadesPermitidas = [2, 3, 4]; //
+        }
+
         return $query->whereIn('patient_id', function ($subquery) use ($unidadesPermitidas) {
             $subquery->select('id')
                      ->from('patients')
