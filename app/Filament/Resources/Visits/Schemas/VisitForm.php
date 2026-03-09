@@ -38,7 +38,7 @@ class VisitForm
 
             DatePicker::make('happened_at')
                 ->label('Data da Visita')
-                ->required(),
+                ->nullable(),
 
             Select::make('type')
                 ->label('Tipo')
