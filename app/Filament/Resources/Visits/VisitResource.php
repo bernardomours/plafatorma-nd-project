@@ -37,10 +37,10 @@ class VisitResource extends Resource
         return VisitsTable::configure($table);
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->whereHas('patient');
-    }
+    // public static function getEloquentQuery(): Builder
+    // {
+    //     return parent::getEloquentQuery()->whereHas('patient');
+    // }
 
     /**
      * @return array<int, class-string|string>|
