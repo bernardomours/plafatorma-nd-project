@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Visits\Schemas;
 use App\Enums\ProfessionalRole;
 use App\Enums\VisitStatus;
 use App\Enums\VisitType;
-use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
@@ -36,7 +36,7 @@ class VisitForm
                 ->searchable()
                 ->preload(),
 
-            DateTimePicker::make('happened_at')
+            DatePicker::make('happened_at')
                 ->label('Data da Visita')
                 ->required(),
 
