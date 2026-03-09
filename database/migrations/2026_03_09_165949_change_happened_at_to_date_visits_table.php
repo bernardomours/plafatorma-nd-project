@@ -11,19 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement("SET SESSION sql_mode = ''");
         Schema::table('visits', function (Blueprint $table) {
-            // O comando ->change() avisa o Laravel que estamos alterando uma coluna existente
             $table->date('happened_at')->change();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('happened_at', function (Blueprint $table) {
-            //
+        DB::statement("SET SESSION sql_mode = ''");
+
+        Schema::table('visits', function (Blueprint $table) {
+            $table->dateTime('happened_at')->change();
         });
     }
 };
