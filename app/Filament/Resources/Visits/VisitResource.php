@@ -13,6 +13,7 @@ use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class VisitResource extends Resource
 {
@@ -34,6 +35,11 @@ class VisitResource extends Resource
     public static function table(Table $table): Table
     {
         return VisitsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereHas('patient');
     }
 
     /**

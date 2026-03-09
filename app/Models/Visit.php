@@ -44,7 +44,7 @@ class Visit extends Model
     {
         return $this->belongsTo(Patient::class)->withTrashed();
     }
-
+    
     /**
      * Get the professional (supervisor/coordinator) that owns the visit.
      */
