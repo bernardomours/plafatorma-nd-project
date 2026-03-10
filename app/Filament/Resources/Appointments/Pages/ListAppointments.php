@@ -242,21 +242,18 @@ class ListAppointments extends ListRecords
                         }
                         $patient = ($melhorPaciente && $maiorSimilaridadePaciente >= 80) ? $melhorPaciente : null;
             
-                        // Lógica de Pontuação Máxima para PROFISSIONAIS
                         $melhorProfissional = null;
                         $maiorSimilaridadeProfissional = 0;
             
                         foreach ($todosProfissionais as $pro) {
                             $dbSlug = \Illuminate\Support\Str::slug($pro->name);
                             
-                            // Se contém perfeitamente, nota 100 e para a busca
                             if (str_contains($dbSlug, $professionalSlugCsv) || str_contains($professionalSlugCsv, $dbSlug)) {
                                 $melhorProfissional = $pro;
                                 $maiorSimilaridadeProfissional = 100;
                                 break;
                             }
                             
-                            // Avalia por porcentagem
                             $tamanho = min(strlen($dbSlug), strlen($professionalSlugCsv));
                             if ($tamanho > 0) {
                                 similar_text(substr($dbSlug, 0, $tamanho), substr($professionalSlugCsv, 0, $tamanho), $porcentagem);
@@ -345,7 +342,7 @@ class ListAppointments extends ListRecords
                             ->send();
                     } else {
                         Notification::make()
-                            ->title('Importação Perfeita!')
+                            ->title('Importação Realizada!')
                             ->body("Todos os {$importados} atendimentos foram importados/atualizados com sucesso, sem nenhum erro.")
                             ->success()
                             ->send();

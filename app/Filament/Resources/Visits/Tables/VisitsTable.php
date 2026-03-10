@@ -50,6 +50,7 @@ class VisitsTable
                     ->options(VisitType::class),
                 SelectFilter::make('status')
                     ->label('Status')
+                    ->default('pending')
                     ->options(VisitStatus::class),
                 SelectFilter::make('professional_id')
                     ->label('Profissional')
@@ -77,14 +78,7 @@ class VisitsTable
                             $q->where('unit_id', $data['value']);
                         });
                     }),
-            ],layout: FiltersLayout::AboveContentCollapsible)
-            ->filtersTriggerAction(
-                fn ($action) => $action
-                    ->button()
-                    ->label('Filtros')
-                    ->slideOver()
-                    ->icon('heroicon-m-chevron-down')
-            )
+            ],layout: FiltersLayout::AboveContent)
             ->recordActions([
                 EditAction::make(),
             ])

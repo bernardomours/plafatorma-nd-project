@@ -73,6 +73,11 @@ class PatientResource extends Resource
             ]);
     }
 
+    public static function canViewAny(): bool
+    {
+        return true; // Todo mundo vê!
+    }
+
     public static function getPages(): array
     {
         return [

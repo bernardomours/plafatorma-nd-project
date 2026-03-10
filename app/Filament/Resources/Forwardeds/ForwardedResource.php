@@ -42,6 +42,26 @@ class ForwardedResource extends Resource
         ];
     }
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        if ($user?->is_admin) {
+            return true;
+        }
+
+        $profissional = \App\Models\Professional::withoutGlobalScopes()
+                            ->where('email', $user->email)
+                            ->first();
+
+        // A CHAVE DE OURO: Adicionamos o ->value depois de role
+        if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
+            return false; 
+        }
+        
+        return true;
+    }
+
     public static function getPages(): array
     {
         return [
