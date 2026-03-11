@@ -6,23 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        DB::statement("SET SESSION sql_mode = ''");
         Schema::table('visits', function (Blueprint $table) {
-            $table->date('happened_at')->change();
+            // O comando ->change() avisa o banco que estamos apenas alterando a coluna!
+            // Nota: Se a sua coluna original for do tipo timestamp() em vez de dateTime(), mude aqui embaixo.
+            $table->date('happened_at')->nullable()->change();
         });
     }
 
     public function down(): void
     {
-        DB::statement("SET SESSION sql_mode = ''");
-
         Schema::table('visits', function (Blueprint $table) {
-            $table->dateTime('happened_at')->change();
+            // Reverte a alteração caso você precise desfazer no futuro
+            $table->dateTime('happened_at')->nullable(false)->change();
         });
     }
 };
