@@ -50,6 +50,11 @@ class VisitForm
                 ->options(VisitStatus::class)
                 ->required()
                 ->default(VisitStatus::Pending),
+            
+            Select::make('service_type_id')
+                ->label('Ambiente / Tipo de Serviço')
+                ->relationship('serviceType', 'name')
+                ->required(),
 
             Textarea::make('notes')
                 ->label('Observações')

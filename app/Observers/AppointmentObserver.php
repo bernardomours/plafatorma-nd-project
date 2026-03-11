@@ -106,7 +106,7 @@ class AppointmentObserver
         if ($daysCount >= $daysThreshold) {
             Visit::create([
                 'patient_id'      => $patientService->patient_id,
-                'service_type_id' => $patientService->service_type_id, // A visita agora nasce sabendo de onde é!
+                'service_type_id' => $patientService->service_type_id,
                 'professional_id' => $professional_id,
                 'type'            => $type,
                 'status'          => VisitStatus::Pending,

@@ -22,6 +22,7 @@ class Visit extends Model
         'professional_id',
         'happened_at',
         'type',
+        'service_type_id',
         'status',
         'notes',
     ];
@@ -45,9 +46,11 @@ class Visit extends Model
         return $this->belongsTo(Patient::class)->withTrashed();
     }
     
-    /**
-     * Get the professional (supervisor/coordinator) that owns the visit.
-     */
+    public function serviceType(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ServiceType::class);
+    }
+    
     public function professional(): BelongsTo
     {
         return $this->belongsTo(Professional::class)->withTrashed();
