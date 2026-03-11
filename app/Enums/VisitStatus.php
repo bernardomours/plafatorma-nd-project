@@ -8,7 +8,7 @@ enum VisitStatus: string implements HasLabel
 {
     case Pending = 'pending';
     case Completed = 'completed';
-    case Canceled = 'canceled';
+    case Canceled = 'cancelled';
 
     public function getLabel(): ?string
     {
