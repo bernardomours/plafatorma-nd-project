@@ -88,6 +88,12 @@ Route::get('/recalculate-visits', function () {
 //     return 'E-mails de aniversário enviados com sucesso!';
 // });
 
+Route::get('/arrumar-visitas', function () {
+    $idClinica = \App\Models\ServiceType::where('name', 'Clínica')->value('id');
+    $atualizados = \App\Models\Visit::whereNull('service_type_id')->update(['service_type_id' => $idClinica]);
+    return "Mágica feita! {$atualizados} visitas atualizadas para Clínica.";
+});
+
 Route::get('/gerar-acessos-admin', function () {
     $criados = 0;
     
