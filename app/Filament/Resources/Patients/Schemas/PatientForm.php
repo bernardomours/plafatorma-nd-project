@@ -7,6 +7,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Get;
 
 class PatientForm
 {
@@ -38,10 +40,13 @@ class PatientForm
                     ->label('Contato do Responsável')
                     ->helperText('Caso não possua esse dado, pode deixar em branco')
                     ->tel(),
+                    
                 Select::make('unit_id')
                     ->label('Unidade')
                     ->relationship('unit', 'city')
+                    ->live()
                     ->required(),
+                    
                 Select::make('agreement_id')
                     ->label('Convênio')
                     ->relationship(
@@ -51,24 +56,65 @@ class PatientForm
                     ->preload()
                     ->live()
                     ->required(),
-                Select::make('supervisor_id')
-                    ->relationship(
-                        name: 'supervisor',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query) => $query->where('role', 'supervisor')
-                    )
-                    ->label('Supervisor')
-                    ->searchable()
-                    ->preload(),
-                Select::make('coordinator_id')
-                    ->relationship(
-                        name: 'coordinator',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query) => $query->where('role', 'coordinator')
-                    )
-                    ->label('Coordenador')
-                    ->searchable()
-                    ->preload(),
+                
+                Repeater::make('patientServices')
+                    ->relationship()
+                    ->label('Equipe de Acompanhamento (Supervisão e Coordenação)')
+                    ->schema([
+                        Select::make('service_type_id')
+                            ->label('Ambiente / Tipo de Serviço')
+                            ->relationship('serviceType', 'name') 
+                            ->required()
+                            ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                
+                        Select::make('coordinator_id')
+                            ->label('Coordenador')
+                            ->relationship(
+                                name: 'coordinator',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: function (Builder $query, $get) {
+                                    $pacienteUnitId = $get('../../unit_id'); 
+                                    
+                                    // 1. Filtra rigorosamente para mostrar SÓ Coordenadores
+                                    $query->where('role', 'coordinator'); 
+                                    
+                                    // 2. Filtro de unidade
+                                    if ($pacienteUnitId) {
+                                        $query->whereHas('units', fn ($subQuery) => $subQuery->where('units.id', $pacienteUnitId));
+                                    }
+                                    
+                                    return $query;
+                                }
+                            )
+                            ->searchable()
+                            ->preload(),
+                
+                        Select::make('supervisor_id')
+                            ->label('Supervisor')
+                            ->relationship(
+                                name: 'supervisor',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: function (Builder $query, $get) {
+                                    $pacienteUnitId = $get('../../unit_id');
+                                    
+                                    // 1. Filtra rigorosamente para mostrar SÓ Supervisores
+                                    $query->where('role', 'supervisor');
+                                    
+                                    // 2. Filtro de unidade
+                                    if ($pacienteUnitId) {
+                                        $query->whereHas('units', fn ($subQuery) => $subQuery->where('units.id', $pacienteUnitId));
+                                    }
+                                    
+                                    return $query;
+                                }
+                            )
+                            ->searchable()
+                            ->preload(),
+                    ])
+                    ->columns(3)
+                    ->addActionLabel('Adicionar Nova Supervisão/Coordenação')
+                    ->defaultItems(1)
+                    ->columnSpanFull(),
             ]);
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\ProfessionalRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -51,9 +52,9 @@ class Professional extends Model
         return $this->hasMany(Appointment::class);
     }
 
-        public function unit(): BelongsTo
+        public function units(): BelongsToMany
     {
-        return $this->belongsTo(Unit::class);
+        return $this->belongsToMany(Unit::class);
     }
 
     public function therapy(): BelongsTo

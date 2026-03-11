@@ -53,16 +53,22 @@ class ProfessionalsTable
                     ->label('Cargo / Função')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'therapist'   => 'AT',
-                        'supervisor'  => 'Supervisor',
-                        'coordinator' => 'Coordenador',
-                        default       => $state,
+                    ->formatStateUsing(function ($state): string {
+                        // Se for um objeto Enum, pega o valor em texto dele. Se já for texto, usa normal.
+                        $valor = $state instanceof \BackedEnum ? $state->value : $state;
+                        
+                        return match ($valor) {
+                            'therapist'   => 'AT',
+                            'supervisor'  => 'Supervisor',
+                            'coordinator' => 'Coordenador',
+                            default       => (string) $valor,
+                        };
                     }),
                 TextColumn::make('therapy.name')
                     ->label('Especialidade')
                     ->searchable(),
-                TextColumn::make('unit.city')
+                TextColumn::make('units.city') // Coloque no plural!
+                    ->badge()
                     ->label('Unidade')
                     ->searchable(),    
                 TextColumn::make('created_at')
@@ -88,11 +94,11 @@ class ProfessionalsTable
             ])
             ->defaultSort('name', 'asc')
             ->filters([
-                SelectFilter::make('unit')
-                    ->relationship('unit', 'city')
+                SelectFilter::make('units')
+                    ->label('Unidades')
+                    ->relationship('units', 'city')
                     ->preload()
-                    ->multiple()
-                    ->label('Unidade'),
+                    ->multiple(),
                 SelectFilter::make('therapy')
                     ->relationship('therapy', 'name')
                     ->multiple()

@@ -49,10 +49,11 @@ class ProfessionalForm
                     ->label('Especialidade')
                     ->relationship('therapy', 'name')
                     ->required(),
-                Select::make('unit_id')
-                    ->label('Unidade')
-                    ->relationship('unit', 'city')
-                    ->preload(),
+                Select::make('units')
+                    ->label('Unidades')
+                    ->preload()
+                    ->relationship('units', 'city')
+                    ->multiple()
             ]);
     }
 }

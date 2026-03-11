@@ -6,6 +6,7 @@ use App\Enums\VisitStatus;
 use App\Enums\VisitType;
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Models\PatientService;
 use App\Models\Visit;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
@@ -13,6 +14,9 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
+use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use BackedEnum;
 use UnitEnum;
@@ -33,30 +37,49 @@ class AbaMonitoring extends Page implements HasTable
         return auth()->user()?->id === 1;
     }
 
+    // === AS FAMOSAS ABAS (TABS) MÁGICAS ===
+    public function getTableTabs(): array
+        {
+        $tabs = [
+            'todos' => Tab::make('Todos os Ambientes'),
+        ];
+
+        // Cria uma aba dinamicamente para cada tipo de serviço (Clínica, Escola, etc)
+        $serviceTypes = ServiceType::all();
+        foreach ($serviceTypes as $type) {
+            $tabs[$type->id] = Tab::make($type->name)
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('service_type_id', $type->id));
+        }
+
+        return $tabs;
+    }
+
     public function table(Table $table): Table
     {
         return $table
-            ->query(Patient::query()) // Puxa todos os pacientes
+            ->query(PatientService::query()->whereHas('patient')->with(['patient', 'serviceType', 'coordinator', 'supervisor']))
             ->columns([
-                TextColumn::make('name')
+                TextColumn::make('patient.name')
                     ->label('Paciente')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn (PatientService $record) => $record->serviceType->name), // Mostra "Clínica" miúdo embaixo do nome
 
                 // === COLUNA DE COORDENAÇÃO (10 DIAS) ===
                 TextColumn::make('coordination_status')
                     ->label('Coordenação (Meta: 10)')
-                    ->getStateUsing(function (Patient $record) {
-                        // 1. Verifica se já tem visita pendente engatilhada
-                        $hasPending = Visit::where('patient_id', $record->id)
+                    ->getStateUsing(function (PatientService $record) {
+                        // Busca visitas pendentes para ESSE paciente NESTE ambiente
+                        $hasPending = Visit::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Coordination)
                             ->where('status', VisitStatus::Pending)
                             ->exists();
 
                         if ($hasPending) return '⚠️ Visita Pendente';
 
-                        // 2. Se não tem pendente, calcula os dias desde a última
-                        $lastVisit = Visit::where('patient_id', $record->id)
+                        $lastVisit = Visit::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Coordination)
                             ->where('status', VisitStatus::Completed)
                             ->latest('happened_at')
@@ -64,7 +87,9 @@ class AbaMonitoring extends Page implements HasTable
 
                         $startDate = $lastVisit ? $lastVisit->happened_at : null;
 
-                        $query = Appointment::where('patient_id', $record->id)
+                        // Conta os agendamentos de ABA apenas para ESSE ambiente
+                        $query = Appointment::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
 
                         if ($startDate) {
@@ -77,10 +102,10 @@ class AbaMonitoring extends Page implements HasTable
                         
                         return "⏳ {$daysCount} / 10 dias";
                     })
-                    // O Subtítulo cinza com a data da última visita!
-                    ->description(function (Patient $record) {
-                        $lastVisit = Visit::with('professional') // Puxa o profissional junto!
-                            ->where('patient_id', $record->id)
+                    ->description(function (PatientService $record) {
+                        $lastVisit = Visit::with('professional')
+                            ->where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Coordination)
                             ->where('status', VisitStatus::Completed)
                             ->latest('happened_at')
@@ -88,33 +113,32 @@ class AbaMonitoring extends Page implements HasTable
 
                         if ($lastVisit && $lastVisit->happened_at) {
                             $data = Carbon::parse($lastVisit->happened_at)->format('d/m/Y');
-                            $professionalName = $lastVisit->professional ? implode(' ', array_slice(explode(' ', $lastVisit->professional->name), 0, 2)) : 'Desconhecido';                            
-                            
-                            return "Última: {$data} (Feita por {$professionalName})";
+                            $nomeProfissional = $lastVisit->professional ? implode(' ', array_slice(explode(' ', $lastVisit->professional->name), 0, 2)) : 'Desconhecido';
+                            return "Última: {$data} (com {$nomeProfissional})";
                         }
-
                         return 'Nenhuma visita registrada';
                     })
-
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
                         $state === '⚠️ Visita Pendente' => 'warning',
                         $state === '✅ Em dia (0 dias)' => 'success',
-                        default => 'info', // Fica azul enquanto estiver contando
+                        default => 'info',
                     }),
 
                 // === COLUNA DE SUPERVISÃO (20 DIAS) ===
                 TextColumn::make('supervision_status')
                     ->label('Supervisão (Meta: 20)')
-                    ->getStateUsing(function (Patient $record) {
-                        $hasPending = Visit::where('patient_id', $record->id)
+                    ->getStateUsing(function (PatientService $record) {
+                        $hasPending = Visit::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Supervision)
                             ->where('status', VisitStatus::Pending)
                             ->exists();
 
                         if ($hasPending) return '⚠️ Visita Pendente';
 
-                        $lastVisit = Visit::where('patient_id', $record->id)
+                        $lastVisit = Visit::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Supervision)
                             ->where('status', VisitStatus::Completed)
                             ->latest('happened_at')
@@ -122,7 +146,8 @@ class AbaMonitoring extends Page implements HasTable
 
                         $startDate = $lastVisit ? $lastVisit->happened_at : null;
 
-                        $query = Appointment::where('patient_id', $record->id)
+                        $query = Appointment::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
 
                         if ($startDate) {
@@ -135,16 +160,21 @@ class AbaMonitoring extends Page implements HasTable
                         
                         return "⏳ {$daysCount} / 20 dias";
                     })
-                    ->description(function (Patient $record) {
-                        $lastVisit = Visit::where('patient_id', $record->id)
+                    ->description(function (PatientService $record) {
+                        $lastVisit = Visit::with('professional')
+                            ->where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Supervision)
                             ->where('status', VisitStatus::Completed)
                             ->latest('happened_at')
                             ->first();
 
-                        return $lastVisit && $lastVisit->happened_at 
-                            ? 'Última: ' . Carbon::parse($lastVisit->happened_at)->format('d/m/Y') 
-                            : 'Nenhuma visita registrada';
+                        if ($lastVisit && $lastVisit->happened_at) {
+                            $data = Carbon::parse($lastVisit->happened_at)->format('d/m/Y');
+                            $nomeProfissional = $lastVisit->professional ? implode(' ', array_slice(explode(' ', $lastVisit->professional->name), 0, 2)) : 'Desconhecido';
+                            return "Última: {$data} (com {$nomeProfissional})";
+                        }
+                        return 'Nenhuma visita registrada';
                     })
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
@@ -152,6 +182,32 @@ class AbaMonitoring extends Page implements HasTable
                         $state === '✅ Em dia (0 dias)' => 'success',
                         default => 'info',
                     }),
-            ]);
+            ])
+            ->filters([
+                SelectFilter::make('service_type_id')
+                    ->label('Ambiente (ABA)')
+                    ->options(\App\Models\ServiceType::pluck('name', 'id'))
+                    ->placeholder('Todos os Ambientes'),
+
+                SelectFilter::make('unit_id')
+                    ->label('Unidade')
+                    ->options(\App\Models\Unit::pluck('city', 'id'))
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) return $query;
+                        // Busca através da relação do paciente
+                        return $query->whereHas('patient', fn($q) => $q->where('unit_id', $data['value']));
+                    }),
+                SelectFilter::make('professional')
+                    ->label('Profissional')
+                    ->options(\App\Models\Professional::whereIn('role', ['coordinator', 'supervisor'])->pluck('name', 'id'))
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) return $query;
+                        // Como a tabela agora é PatientService, a busca ficou super direta!
+                        return $query->where(function ($q) use ($data) {
+                            $q->where('coordinator_id', $data['value'])
+                              ->orWhere('supervisor_id', $data['value']);
+                        });
+                    }),
+            ], layout: FiltersLayout::AboveContent);
     }
 }

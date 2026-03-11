@@ -47,6 +47,11 @@ class Patient extends Model
         ];
     }
 
+    public function patientServices()
+    {
+        return $this->hasMany(PatientService::class);
+    }
+
     public function movementHistories()
     {
         return $this->morphMany(MovementHistory::class, 'moveable');
