@@ -34,19 +34,19 @@ class SendEmailToCelebrant extends Command
         try {
             $hoje = Carbon::today();
 
-            // Busca aniversariantes em Users
+            // Busca aniversariantes em Users (Singular)
             $users = User::with('unit')->whereMonth('birth_date', $hoje->month)
                               ->whereDay('birth_date', $hoje->day)
                               ->get()
                               ->each(fn($item) => $item->tipo_pessoa = 'Usuário(s)');
 
-            // Busca aniversariantes em Professionals
-            $professionals = Professional::with('unit')->whereMonth('birth_date', $hoje->month)
-                                     ->whereDay('birth_date', $hoje->day)
-                                     ->get()
-                                     ->each(fn($item) => $item->tipo_pessoa = 'Profissional(is)');
+            // Busca aniversariantes em Professionals (AGORA NO PLURAL: 'units')
+            $professionals = Professional::with('units')->whereMonth('birth_date', $hoje->month)
+                                      ->whereDay('birth_date', $hoje->day)
+                                      ->get()
+                                      ->each(fn($item) => $item->tipo_pessoa = 'Profissional(is)');
 
-            // Busca aniversariantes em Patients
+            // Busca aniversariantes em Patients (Singular)
             $patients = Patient::with('unit')->whereMonth('birth_date', $hoje->month)
                                  ->whereDay('birth_date', $hoje->day)
                                  ->get()
@@ -60,9 +60,23 @@ class SendEmailToCelebrant extends Command
                 return;
             }
 
-            // Separa os aniversariantes por unidade
-            $aniversariantesMossoro = $todosAniversariantes->where('unit_id', 1);
-            $aniversariantesNatal = $todosAniversariantes->where('unit_id', '!=', 1);
+            // === A MÁGICA DO FILTRO INTELIGENTE ===
+            // Separa os aniversariantes por unidade entendendo quem é Multi-Unidades
+            
+            $aniversariantesMossoro = $todosAniversariantes->filter(function ($item) {
+                if ($item instanceof Professional) {
+                    return $item->units->contains('id', 1); // Verifica se Mossoró tá na lista dele
+                }
+                return $item->unit_id == 1; // Para Pacientes e Users, continua normal
+            });
+
+            $aniversariantesNatal = $todosAniversariantes->filter(function ($item) {
+                if ($item instanceof Professional) {
+                    return $item->units->where('id', '!=', 1)->isNotEmpty(); // Verifica se tem outras unidades
+                }
+                return $item->unit_id != 1;
+            });
+            // ======================================
 
             // Lógica para Unidade Mossoró
             if ($aniversariantesMossoro->isNotEmpty()) {

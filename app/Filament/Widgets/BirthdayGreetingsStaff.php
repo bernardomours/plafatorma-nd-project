@@ -34,7 +34,7 @@ class BirthdayGreetingsStaff extends TableWidget
     {
         return $table
             ->query(Professional::query()->whereRaw('1 = 0')) 
-            ->heading('Equipe') // Mudei de Profissionais para Equipe para abraçar Users e Profs
+            ->heading('Equipe')
             ->description('🎂 Aniversariantes do Dia')
             ->columns([
                 TextColumn::make('name')

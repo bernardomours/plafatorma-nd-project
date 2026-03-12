@@ -1,5 +1,5 @@
 <h2>🎉 Aniversariantes do dia! - Núcleo Desenvolve</h2>
-<p>Não se esqueça de dar os parabéns para:</p>
+<p>Hoje estamos celebrando mais um ano para os seguintes aniversariantes:</p>
 
 <ul>
     @foreach($celebrants as $pessoa)
@@ -10,7 +10,13 @@
             <br>
             <strong>{{ $pessoa->name }}</strong> 
             <br>
-            <small>Unidade: {{ $pessoa->unit->city ?? 'N/A' }}</small>
+            <small>Unidade: 
+                @if($pessoa->tipo_pessoa === 'Profissional(is)')
+                    {{ $pessoa->units->pluck('city')->join(', ') ?: 'N/A' }}
+                @else
+                    {{ $pessoa->unit->city ?? 'N/A' }}
+                @endif
+            </small>
         </li>
     @endforeach
 </ul>
