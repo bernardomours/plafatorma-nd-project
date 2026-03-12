@@ -83,10 +83,10 @@ Route::get('/recalculate-visits', function () {
     return $output;
 });
 
-// Route::get('/disparar-aniversarios', function () {
-//     Artisan::call('app:send-birthday-emails'); // ou 'nucleo:notificar-aniversarios'
-//     return 'E-mails de aniversário enviados com sucesso!';
-// });
+Route::get('/disparar-aniversarios', function () {
+    Artisan::call('app:send-birthday-emails'); // ou 'nucleo:notificar-aniversarios'
+    return 'E-mails de aniversário enviados com sucesso!';
+});
 
 // Route::get('/arrumar-visitas', function () {
 //     $idClinica = \App\Models\ServiceType::where('name', 'Clínica')->value('id');
