@@ -16,7 +16,6 @@ Route::get('/', function () {
 
 Route::get('/recalculate-visits', function () {
     $observer = new AppointmentObserver();
-    // Pega todos os pacientes.
     $patients = Patient::all();
     $output = "Iniciando recálculo de visitas...<br><br>";
 
@@ -26,8 +25,6 @@ Route::get('/recalculate-visits', function () {
         $anyAppointment = Appointment::where('patient_id', $patient->id)->first();
 
         if ($anyAppointment) {
-
-            // Estado ANTES: Busca as contagens iniciais.
             $before_counts = Patient::withCount([
                 'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination)->where('status', VisitStatus::Pending),
                 'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision)->where('status', VisitStatus::Pending),
@@ -46,10 +43,8 @@ Route::get('/recalculate-visits', function () {
 
             $output .= "-> Acionando o observador para recalcular...<br>";
 
-            // Ação: Roda o observador, que pode criar visitas.
             $observer->created($anyAppointment);
 
-            // Estado DEPOIS: Re-carrega o paciente com as contagens atualizadas.
             $after_counts = Patient::withCount([
                 'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination)->where('status', VisitStatus::Pending),
                 'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision)->where('status', VisitStatus::Pending),

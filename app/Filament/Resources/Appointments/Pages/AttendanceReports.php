@@ -132,7 +132,7 @@ class AttendanceReports extends Page implements HasTable
             'patient_id' => $this->patient_id,
             'therapy_id' => $this->therapy_id,
             'unidades' => $this->unidades, 
-            'agreement_id' => $this->agreement_id, // <-- NOVO: Disponibilizando para os gráficos
+            'agreement_id' => $this->agreement_id,
         ];
     }
 
@@ -151,7 +151,6 @@ class AttendanceReports extends Page implements HasTable
                     ->when($this->patient_id, fn($q) => $q->where('appointments.patient_id', $this->patient_id))
                     ->when($this->therapy_id, fn($q) => $q->where('appointments.therapy_id', $this->therapy_id))
                     ->when(!empty($this->unidades), fn($q) => $q->whereHas('patient', fn($queryPaciente) => $queryPaciente->whereIn('unit_id', $this->unidades)))
-                    // <-- NOVO: O Filtro de Convênio aplicado na tabela!
                     ->when($this->agreement_id, fn($q) => $q->whereHas('patient', fn($queryPaciente) => $queryPaciente->where('agreement_id', $this->agreement_id)))
                     ->select(
                         $isSqlite 

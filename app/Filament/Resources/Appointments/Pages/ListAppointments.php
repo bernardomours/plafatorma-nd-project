@@ -29,9 +29,9 @@ class ListAppointments extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Registrar Consulta'),
             
-            // O SEU BOTÃO DE PDF ORIGINAL
             Actions\Action::make('export_pdf')
                 ->label('Exportar para PDF')
                 ->icon('heroicon-o-document-arrow-down')

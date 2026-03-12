@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\URL;
 use App\Models\Appointment;
 use App\Observers\AppointmentObserver;
 use Illuminate\Contracts\View\View;
+use App\Models\Visit;
+use App\Observers\VisitObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Appointment::observe(AppointmentObserver::class);
+        Visit::observe(VisitObserver::class);
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_END,

@@ -1,6 +1,5 @@
 <x-filament-panels::page>
     
-    {{-- CAIXA DE FILTROS COM BOTÃO --}}
     <div class="p-4 mb-4 bg-white rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <form wire:submit="aplicarFiltros">
             
@@ -15,7 +14,6 @@
         </form>
     </div>
 
-    {{-- A TABELA --}}
     {{ $this->table }}
 
 </x-filament-panels::page>
