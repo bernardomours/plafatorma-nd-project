@@ -46,8 +46,6 @@ class VisitObserver
      */
     private function gerarVisitaPendente(Visit $visit, $tipo): void
     {
-        // Verifica se já não existe uma visita PENDENTE desse tipo para o paciente.
-        // Isso impede que o sistema crie duas visitas pendentes iguais se a pessoa clicar em "Salvar" duas vezes.
         $jaTemPendente = Visit::where('patient_id', $visit->patient_id)
             ->where('service_type_id', $visit->service_type_id)
             ->where('type', $tipo)
@@ -55,10 +53,10 @@ class VisitObserver
             ->exists();
 
         if (!$jaTemPendente) {
-            // Cria a nova solicitação silenciosamente no banco!
             Visit::create([
                 'patient_id' => $visit->patient_id,
                 'service_type_id' => $visit->service_type_id,
+                'professional_id' => $visit->professional_id,
                 'type' => $tipo,
                 'status' => VisitStatus::Pending,
             ]);
