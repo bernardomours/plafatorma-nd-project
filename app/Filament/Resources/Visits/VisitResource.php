@@ -47,39 +47,51 @@ class VisitResource extends Resource
         }
 
         $user = auth()->user();
+        $unidadesPermitidas = [];
         
-        // 2. Tenta pegar a unidade direto da tabela de usuários
-        $userUnitId = $user->unit_id;
+        // 2. Tenta pegar a unidade direto da tabela de usuários (Singular)
+        if ($user->unit_id) {
+            $unidadesPermitidas[] = $user->unit_id;
+        }
 
-        // 3. Se estiver vazio, caçamos o profissional ignorando os Scopes de segurança temporariamente!
-        if (!$userUnitId) {
-            $profissional = \App\Models\Professional::withoutGlobalScopes()
-                                ->where('email', $user->email)
-                                ->first();
-                                
-            $userUnitId = $profissional?->unit_id;
+        // 3. Busca o profissional para pegar as Múltiplas Unidades (Plural)
+        $profissional = \App\Models\Professional::withoutGlobalScopes()
+                            ->with('units') // Traz a nova relação de unidades
+                            ->where('email', $user->email)
+                            ->first();
+                            
+        if ($profissional && $profissional->units->isNotEmpty()) {
+            // Adiciona todas as unidades que este profissional atende na lista
+            $idsDoProfissional = $profissional->units->pluck('id')->toArray();
+            $unidadesPermitidas = array_merge($unidadesPermitidas, $idsDoProfissional);
         }
         
+        // Remove possíveis IDs repetidos
+        $unidadesPermitidas = array_unique($unidadesPermitidas);
+        
         // 4. Se não achou unidade nenhuma, esconde tudo por segurança
-        if (!$userUnitId) {
+        if (empty($unidadesPermitidas)) {
             return $query->whereRaw('1 = 0'); 
         }
 
-        // --- AS REGRAS OFICIAIS DE IDs ---
+        // --- AS REGRAS OFICIAIS DE IDs (MOSSORÓ VS NATAL) ---
+        $regionaisPermitidas = [];
         
-        // ID 1 = Mossoró
-        if ($userUnitId == 1) { 
-            $unidadesPermitidas = [1];
-        } else {
-            // IDs 2, 3 e 4 = Região de Natal e outras
-            $unidadesPermitidas = [2, 3, 4]; 
+        // Se ele pertence a Mossoró (ID 1), libera Mossoró
+        if (in_array(1, $unidadesPermitidas)) { 
+            $regionaisPermitidas[] = 1;
+        } 
+        
+        // Se ele tem ALGUMA unidade da região de Natal (2, 3 ou 4), libera a região toda de Natal
+        if (array_intersect([2, 3, 4], $unidadesPermitidas)) {
+            array_push($regionaisPermitidas, 2, 3, 4);
         }
 
-        // 5. A trava "Raiz" direto no banco (Imune a linhas fantasmas e bloqueios do UnitScope)
-        return $query->whereIn('patient_id', function ($subquery) use ($unidadesPermitidas) {
+        // 5. A trava "Raiz" direto no banco (Imune a linhas fantasmas)
+        return $query->whereIn('patient_id', function ($subquery) use ($regionaisPermitidas) {
             $subquery->select('id')
                      ->from('patients')
-                     ->whereIn('unit_id', $unidadesPermitidas);
+                     ->whereIn('unit_id', $regionaisPermitidas);
         });
     }
 
