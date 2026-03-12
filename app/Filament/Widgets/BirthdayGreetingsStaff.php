@@ -15,17 +15,40 @@ class BirthdayGreetingsStaff extends TableWidget
 
     public function getTableRecords(): Collection
     {
-        // 1. Corrigido: Profissionais agora puxam 'units' (plural)
-        $professionals = Professional::with('units')
-            ->whereMonth('birth_date', now()->month)
-            ->whereDay('birth_date', now()->day)
-            ->get();
+        $user = auth()->user();
+        
+        // 1. Define a "Região" de quem está logado
+        $unidadesPermitidas = [];
+        if ($user->unit_id == 1) {
+            $unidadesPermitidas = [1]; // Mossoró vê apenas Mossoró
+        } else {
+            $unidadesPermitidas = [2, 3, 4]; // Região Natal vê Natal, JC e Santa Cruz
+        }
 
-        // 2. Mantido: Users continuam puxando 'unit' (singular)
-        $users = User::with('unit')
+        // 2. Busca Profissionais IGNORANDO o bloqueio padrão e aplicando a regra da região
+        $professionalsQuery = Professional::withoutGlobalScopes()
+            ->with('units')
             ->whereMonth('birth_date', now()->month)
-            ->whereDay('birth_date', now()->day)
-            ->get();
+            ->whereDay('birth_date', now()->day);
+
+        // Se NÃO for Admin, aplica o filtro da região
+        if (!$user->is_admin) {
+            $professionalsQuery->whereHas('units', function ($q) use ($unidadesPermitidas) {
+                $q->whereIn('units.id', $unidadesPermitidas);
+            });
+        }
+        $professionals = $professionalsQuery->get();
+
+        // 3. Busca Usuários da Equipe
+        $usersQuery = User::with('unit')
+            ->whereMonth('birth_date', now()->month)
+            ->whereDay('birth_date', now()->day);
+
+        // Se NÃO for Admin, aplica o filtro da região
+        if (!$user->is_admin) {
+            $usersQuery->whereIn('unit_id', $unidadesPermitidas);
+        }
+        $users = $usersQuery->get();
 
         return $professionals->concat($users);
     }

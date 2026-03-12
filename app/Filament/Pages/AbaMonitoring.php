@@ -37,14 +37,12 @@ class AbaMonitoring extends Page implements HasTable
         return auth()->user()?->id === 1;
     }
 
-    // === AS FAMOSAS ABAS (TABS) MÁGICAS ===
     public function getTableTabs(): array
         {
         $tabs = [
             'todos' => Tab::make('Todos os Ambientes'),
         ];
 
-        // Cria uma aba dinamicamente para cada tipo de serviço (Clínica, Escola, etc)
         $serviceTypes = ServiceType::all();
         foreach ($serviceTypes as $type) {
             $tabs[$type->id] = Tab::make($type->name)
@@ -63,13 +61,31 @@ class AbaMonitoring extends Page implements HasTable
                     ->label('Paciente')
                     ->searchable()
                     ->sortable()
-                    ->description(fn (PatientService $record) => $record->serviceType->name), // Mostra "Clínica" miúdo embaixo do nome
+                    ->description(fn (PatientService $record) => $record->serviceType->name),
 
-                // === COLUNA DE COORDENAÇÃO (10 DIAS) ===
                 TextColumn::make('coordination_status')
                     ->label('Coordenação (Meta: 10)')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $type = VisitType::Coordination->value;
+                        $status = VisitStatus::Completed->value;
+                        
+                        return $query->orderByRaw("(
+                            SELECT COUNT(DISTINCT DATE(appointment_date))
+                            FROM appointments
+                            WHERE appointments.patient_id = patient_services.patient_id
+                              AND appointments.service_type_id = patient_services.service_type_id
+                              AND appointments.therapy_id IN (SELECT id FROM therapies WHERE name = 'ABA')
+                              AND appointments.appointment_date > COALESCE((
+                                  SELECT happened_at FROM visits
+                                  WHERE visits.patient_id = patient_services.patient_id
+                                    AND visits.service_type_id = patient_services.service_type_id
+                                    AND visits.type = '{$type}'
+                                    AND visits.status = '{$status}'
+                                  ORDER BY happened_at DESC LIMIT 1
+                              ), '2000-01-01')
+                        ) {$direction}");
+                    })
                     ->getStateUsing(function (PatientService $record) {
-                        // Busca visitas pendentes para ESSE paciente NESTE ambiente
                         $hasPending = Visit::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Coordination)
@@ -86,8 +102,6 @@ class AbaMonitoring extends Page implements HasTable
                             ->first();
 
                         $startDate = $lastVisit ? $lastVisit->happened_at : null;
-
-                        // Conta os agendamentos de ABA apenas para ESSE ambiente
                         $query = Appointment::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
@@ -125,9 +139,28 @@ class AbaMonitoring extends Page implements HasTable
                         default => 'info',
                     }),
 
-                // === COLUNA DE SUPERVISÃO (20 DIAS) ===
                 TextColumn::make('supervision_status')
                     ->label('Supervisão (Meta: 20)')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $type = VisitType::Supervision->value;
+                        $status = VisitStatus::Completed->value;
+                        
+                        return $query->orderByRaw("(
+                            SELECT COUNT(DISTINCT DATE(appointment_date))
+                            FROM appointments
+                            WHERE appointments.patient_id = patient_services.patient_id
+                              AND appointments.service_type_id = patient_services.service_type_id
+                              AND appointments.therapy_id IN (SELECT id FROM therapies WHERE name = 'ABA')
+                              AND appointments.appointment_date > COALESCE((
+                                  SELECT happened_at FROM visits
+                                  WHERE visits.patient_id = patient_services.patient_id
+                                    AND visits.service_type_id = patient_services.service_type_id
+                                    AND visits.type = '{$type}'
+                                    AND visits.status = '{$status}'
+                                  ORDER BY happened_at DESC LIMIT 1
+                              ), '2000-01-01')
+                        ) {$direction}");
+                    })
                     ->getStateUsing(function (PatientService $record) {
                         $hasPending = Visit::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
@@ -194,7 +227,6 @@ class AbaMonitoring extends Page implements HasTable
                     ->options(\App\Models\Unit::pluck('city', 'id'))
                     ->query(function (Builder $query, array $data): Builder {
                         if (empty($data['value'])) return $query;
-                        // Busca através da relação do paciente
                         return $query->whereHas('patient', fn($q) => $q->where('unit_id', $data['value']));
                     }),
                 SelectFilter::make('professional')
@@ -202,7 +234,6 @@ class AbaMonitoring extends Page implements HasTable
                     ->options(\App\Models\Professional::whereIn('role', ['coordinator', 'supervisor'])->pluck('name', 'id'))
                     ->query(function (Builder $query, array $data): Builder {
                         if (empty($data['value'])) return $query;
-                        // Como a tabela agora é PatientService, a busca ficou super direta!
                         return $query->where(function ($q) use ($data) {
                             $q->where('coordinator_id', $data['value'])
                               ->orWhere('supervisor_id', $data['value']);
