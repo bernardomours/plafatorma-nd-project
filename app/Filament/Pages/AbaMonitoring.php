@@ -7,8 +7,10 @@ use App\Enums\VisitType;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\PatientService;
+use App\Models\ServiceType;
 use App\Models\Visit;
 use Filament\Pages\Page;
+use Filament\Resources\Components\Tab;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -26,19 +28,19 @@ class AbaMonitoring extends Page implements HasTable
     use InteractsWithTable;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-presentation-chart-line';
-    protected static string|UnitEnum|null $navigationGroup = 'Administração';
+    protected static string|UnitEnum|null $navigationGroup = 'Gerência';
     protected static ?string $navigationLabel = 'Monitoramento ABA';
     protected static ?string $title = 'Auditoria: Monitoramento ABA';
     protected static ?string $slug = 'aba-monitoring';
     protected string $view = 'filament.pages.aba-monitoring';
 
-    public static function canAccess(): bool
+    public static function canViewAny(): bool
     {
-        return auth()->user()?->id === 1;
+        return auth()->user()?->is_admin ?? false;
     }
 
     public function getTableTabs(): array
-        {
+    {
         $tabs = [
             'todos' => Tab::make('Todos os Ambientes'),
         ];
@@ -74,11 +76,12 @@ class AbaMonitoring extends Page implements HasTable
                             FROM appointments
                             WHERE appointments.patient_id = patient_services.patient_id
                               AND appointments.service_type_id = patient_services.service_type_id
+                              AND appointments.appointment_date <= CURRENT_DATE
                               AND appointments.therapy_id IN (SELECT id FROM therapies WHERE name = 'ABA')
                               AND appointments.appointment_date > COALESCE((
                                   SELECT happened_at FROM visits
                                   WHERE visits.patient_id = patient_services.patient_id
-                                    AND visits.service_type_id = patient_services.service_type_id
+                                    AND (visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)
                                     AND visits.type = '{$type}'
                                     AND visits.status = '{$status}'
                                   ORDER BY happened_at DESC LIMIT 1
@@ -87,23 +90,25 @@ class AbaMonitoring extends Page implements HasTable
                     })
                     ->getStateUsing(function (PatientService $record) {
                         $hasPending = Visit::where('patient_id', $record->patient_id)
-                            ->where('service_type_id', $record->service_type_id)
-                            ->where('type', VisitType::Coordination)
-                            ->where('status', VisitStatus::Pending)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Coordination->value)
+                            ->where('status', VisitStatus::Pending->value)
                             ->exists();
 
                         if ($hasPending) return '⚠️ Visita Pendente';
 
                         $lastVisit = Visit::where('patient_id', $record->patient_id)
-                            ->where('service_type_id', $record->service_type_id)
-                            ->where('type', VisitType::Coordination)
-                            ->where('status', VisitStatus::Completed)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Coordination->value)
+                            ->where('status', VisitStatus::Completed->value)
                             ->latest('happened_at')
                             ->first();
 
                         $startDate = $lastVisit ? $lastVisit->happened_at : null;
+                        
                         $query = Appointment::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
+                            ->where('appointment_date', '<=', Carbon::today()) // 🛡️ Trava contra o futuro!
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
 
                         if ($startDate) {
@@ -119,9 +124,9 @@ class AbaMonitoring extends Page implements HasTable
                     ->description(function (PatientService $record) {
                         $lastVisit = Visit::with('professional')
                             ->where('patient_id', $record->patient_id)
-                            ->where('service_type_id', $record->service_type_id)
-                            ->where('type', VisitType::Coordination)
-                            ->where('status', VisitStatus::Completed)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Coordination->value)
+                            ->where('status', VisitStatus::Completed->value)
                             ->latest('happened_at')
                             ->first();
 
@@ -150,11 +155,12 @@ class AbaMonitoring extends Page implements HasTable
                             FROM appointments
                             WHERE appointments.patient_id = patient_services.patient_id
                               AND appointments.service_type_id = patient_services.service_type_id
+                              AND appointments.appointment_date <= CURRENT_DATE
                               AND appointments.therapy_id IN (SELECT id FROM therapies WHERE name = 'ABA')
                               AND appointments.appointment_date > COALESCE((
                                   SELECT happened_at FROM visits
                                   WHERE visits.patient_id = patient_services.patient_id
-                                    AND visits.service_type_id = patient_services.service_type_id
+                                    AND (visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)
                                     AND visits.type = '{$type}'
                                     AND visits.status = '{$status}'
                                   ORDER BY happened_at DESC LIMIT 1
@@ -163,17 +169,17 @@ class AbaMonitoring extends Page implements HasTable
                     })
                     ->getStateUsing(function (PatientService $record) {
                         $hasPending = Visit::where('patient_id', $record->patient_id)
-                            ->where('service_type_id', $record->service_type_id)
-                            ->where('type', VisitType::Supervision)
-                            ->where('status', VisitStatus::Pending)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Supervision->value)
+                            ->where('status', VisitStatus::Pending->value)
                             ->exists();
 
                         if ($hasPending) return '⚠️ Visita Pendente';
 
                         $lastVisit = Visit::where('patient_id', $record->patient_id)
-                            ->where('service_type_id', $record->service_type_id)
-                            ->where('type', VisitType::Supervision)
-                            ->where('status', VisitStatus::Completed)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Supervision->value)
+                            ->where('status', VisitStatus::Completed->value)
                             ->latest('happened_at')
                             ->first();
 
@@ -181,6 +187,7 @@ class AbaMonitoring extends Page implements HasTable
 
                         $query = Appointment::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
+                            ->where('appointment_date', '<=', Carbon::today()) // 🛡️ Trava contra o futuro!
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
 
                         if ($startDate) {
@@ -196,9 +203,9 @@ class AbaMonitoring extends Page implements HasTable
                     ->description(function (PatientService $record) {
                         $lastVisit = Visit::with('professional')
                             ->where('patient_id', $record->patient_id)
-                            ->where('service_type_id', $record->service_type_id)
-                            ->where('type', VisitType::Supervision)
-                            ->where('status', VisitStatus::Completed)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Supervision->value)
+                            ->where('status', VisitStatus::Completed->value)
                             ->latest('happened_at')
                             ->first();
 

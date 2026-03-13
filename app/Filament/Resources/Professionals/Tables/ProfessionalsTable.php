@@ -113,7 +113,7 @@ class ProfessionalsTable
                     ->label('Cargo/Função'),
                     
                 TrashedFilter::make()
-                    ->visible(fn () => auth()->user()?->is_admin),
+                    //->visible(fn () => auth()->user()?->is_admin),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersTriggerAction(
                 fn ($action) => $action

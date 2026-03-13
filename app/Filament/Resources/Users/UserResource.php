@@ -44,8 +44,7 @@ class UserResource extends Resource
 
     public static function canViewAny(): bool
     {
-        // Verifica a coluna 'is_admin' que você criou na migration
-        return auth()->user()?->is_admin ?? false;
+        return auth()->user()?->id === 1;
     }
 
     public static function getPages(): array

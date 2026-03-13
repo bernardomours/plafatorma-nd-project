@@ -22,7 +22,7 @@ class RequestedServiceResource extends Resource
     protected static ?string $modelLabel = 'CH - Solicitada';
     protected static ?string $pluralModelLabel = 'CH - Solicitada';
     protected static ?string $navigationLabel = 'CH - Solicitada';
-    protected static string|UnitEnum|null $navigationGroup = 'Administração';
+    protected static string|UnitEnum|null $navigationGroup = 'Gerência';
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
     public static function form(Schema $schema): Schema
@@ -44,7 +44,6 @@ class RequestedServiceResource extends Resource
 
     public static function canViewAny(): bool
     {
-        // Verifica a coluna 'is_admin' que você criou na migration
         return auth()->user()?->is_admin ?? false;
     }
 

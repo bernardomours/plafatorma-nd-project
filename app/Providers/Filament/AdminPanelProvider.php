@@ -47,8 +47,9 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'Frequência',
                 'Ocupação',
-                'Administração',
+                'Gerência',
                 'Serviços',
+                'Administração',
             ])
             
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

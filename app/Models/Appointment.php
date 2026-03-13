@@ -6,6 +6,8 @@ use App\Models\Scopes\UnitScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Appointment extends Model
 {
@@ -51,6 +53,15 @@ class Appointment extends Model
             'therapy_id' => 'integer',
             'service_type_id' => 'integer',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['patient_id', 'professional_id', 'therapy_id', 'appointment_date', 'status'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->dontLogIfAttributesChangedOnly(['updated_at']);
     }
 
     public function patient(): BelongsTo

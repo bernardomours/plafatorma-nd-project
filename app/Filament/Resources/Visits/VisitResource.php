@@ -53,38 +53,31 @@ class VisitResource extends Resource
         }
 
         $profissional = \App\Models\Professional::withoutGlobalScopes()
-                            ->with('units') // Traz a nova relação de unidades
+                            ->with('units')
                             ->where('email', $user->email)
                             ->first();
                             
         if ($profissional && $profissional->units->isNotEmpty()) {
-            // Adiciona todas as unidades que este profissional atende na lista
             $idsDoProfissional = $profissional->units->pluck('id')->toArray();
             $unidadesPermitidas = array_merge($unidadesPermitidas, $idsDoProfissional);
         }
         
-        // Remove possíveis IDs repetidos
         $unidadesPermitidas = array_unique($unidadesPermitidas);
         
-        // 4. Se não achou unidade nenhuma, esconde tudo por segurança
         if (empty($unidadesPermitidas)) {
             return $query->whereRaw('1 = 0'); 
         }
 
-        // --- AS REGRAS OFICIAIS DE IDs (MOSSORÓ VS NATAL) ---
         $regionaisPermitidas = [];
         
-        // Se ele pertence a Mossoró (ID 1), libera Mossoró
         if (in_array(1, $unidadesPermitidas)) { 
             $regionaisPermitidas[] = 1;
         } 
         
-        // Se ele tem ALGUMA unidade da região de Natal (2, 3 ou 4), libera a região toda de Natal
         if (array_intersect([2, 3, 4], $unidadesPermitidas)) {
             array_push($regionaisPermitidas, 2, 3, 4);
         }
 
-        // 5. A trava "Raiz" direto no banco (Imune a linhas fantasmas)
         return $query->whereIn('patient_id', function ($subquery) use ($regionaisPermitidas) {
             $subquery->select('id')
                      ->from('patients')
@@ -94,7 +87,7 @@ class VisitResource extends Resource
 
     // public static function canViewAny(): bool
     // {
-    //     return true; // Todo mundo vê!
+    //     return true;
     // }
 
     public static function canViewAny(): bool
@@ -109,7 +102,6 @@ class VisitResource extends Resource
                             ->where('email', $user->email)
                             ->first();
 
-        // A CHAVE DE OURO: Adicionamos o ->value depois de role
         if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
             return false; 
         }
