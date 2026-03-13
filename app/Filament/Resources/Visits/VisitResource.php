@@ -41,7 +41,6 @@ class VisitResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // 1. Catraca VIP para o Admin
         if (auth()->user()?->is_admin) {
             return $query;
         }
@@ -49,12 +48,10 @@ class VisitResource extends Resource
         $user = auth()->user();
         $unidadesPermitidas = [];
         
-        // 2. Tenta pegar a unidade direto da tabela de usuários (Singular)
         if ($user->unit_id) {
             $unidadesPermitidas[] = $user->unit_id;
         }
 
-        // 3. Busca o profissional para pegar as Múltiplas Unidades (Plural)
         $profissional = \App\Models\Professional::withoutGlobalScopes()
                             ->with('units') // Traz a nova relação de unidades
                             ->where('email', $user->email)
@@ -95,9 +92,29 @@ class VisitResource extends Resource
         });
     }
 
+    // public static function canViewAny(): bool
+    // {
+    //     return true; // Todo mundo vê!
+    // }
+
     public static function canViewAny(): bool
     {
-        return true; // Todo mundo vê!
+        $user = auth()->user();
+
+        if ($user?->is_admin) {
+            return true;
+        }
+
+        $profissional = \App\Models\Professional::withoutGlobalScopes()
+                            ->where('email', $user->email)
+                            ->first();
+
+        // A CHAVE DE OURO: Adicionamos o ->value depois de role
+        if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
+            return false; 
+        }
+        
+        return true;
     }
     /**
      * @return array<int, class-string|string>|
