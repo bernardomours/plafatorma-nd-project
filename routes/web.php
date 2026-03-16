@@ -3,6 +3,7 @@
 use App\Enums\VisitStatus;
 use App\Enums\VisitType;
 use App\Models\Patient;
+use App\Models\PatientService;
 use App\Observers\AppointmentObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -16,38 +17,41 @@ Route::get('/', function () {
 
 Route::get('/recalculate-visits', function () {
     $observer = new AppointmentObserver();
-    $patients = Patient::all();
-    $output = "Iniciando recálculo de visitas...<br><br>";
+    
+    // Vamos varrer os VÍNCULOS em vez de pacientes soltos. Assim cobrimos todos os ambientes!
+    $patientServices = PatientService::with('patient')->get();
+    $output = "Iniciando recálculo de visitas (Modo Turbinado)...<br><br>";
 
-    foreach ($patients as $patient) {
-        $output .= "<b>Verificando Paciente: {$patient->name}</b><br>";
+    foreach ($patientServices as $service) {
+        $patient = $service->patient;
+        if (!$patient) continue;
 
-        $anyAppointment = Appointment::where('patient_id', $patient->id)->first();
+        $ambienteNome = $service->serviceType ? $service->serviceType->name : 'Desconhecido';
+        $output .= "<b>Verificando Paciente: {$patient->name} | Ambiente: {$ambienteNome}</b><br>";
 
-        if ($anyAppointment) {
+        // Pega um agendamento válido DESTE ambiente que seja de ABA
+        $validAppointment = Appointment::where('patient_id', $patient->id)
+            ->where('service_type_id', $service->service_type_id)
+            ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'))
+            ->latest('appointment_date')
+            ->first();
+
+        if ($validAppointment) {
             $before_counts = Patient::withCount([
-                'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination)->where('status', VisitStatus::Pending),
-                'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision)->where('status', VisitStatus::Pending),
+                'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination->value)->where('status', VisitStatus::Pending->value),
+                'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision->value)->where('status', VisitStatus::Pending->value),
             ])->find($patient->id);
 
             $before_coord_count = $before_counts->pending_coordination_visits_count;
             $before_super_count = $before_counts->pending_supervision_visits_count;
 
-            $output .= $before_coord_count > 0
-                ? "- Status: Já possui {$before_coord_count} visita(s) de Coordenação pendente(s).<br>"
-                : "- Status: Nenhuma visita de Coordenação pendente encontrada.<br>";
-
-            $output .= $before_super_count > 0
-                ? "- Status: Já possui {$before_super_count} visita(s) de Supervisão pendente(s).<br>"
-                : "- Status: Nenhuma visita de Supervisão pendente encontrada.<br>";
-
             $output .= "-> Acionando o observador para recalcular...<br>";
 
-            $observer->created($anyAppointment);
+            $observer->created($validAppointment);
 
             $after_counts = Patient::withCount([
-                'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination)->where('status', VisitStatus::Pending),
-                'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision)->where('status', VisitStatus::Pending),
+                'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination->value)->where('status', VisitStatus::Pending->value),
+                'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision->value)->where('status', VisitStatus::Pending->value),
             ])->find($patient->id);
 
             $after_coord_count = $after_counts->pending_coordination_visits_count;
@@ -55,11 +59,11 @@ Route::get('/recalculate-visits', function () {
 
             $visitCreated = false;
             if ($after_coord_count > $before_coord_count) {
-                $output .= "- <span style='color:green;'><b>Sucesso:</b> Nova visita de Coordenação foi criada!</span><br>";
+                $output .= "- <span style='color:green;'><b>Sucesso:</b> Nova visita de Coordenação criada!</span><br>";
                 $visitCreated = true;
             }
             if ($after_super_count > $before_super_count) {
-                $output .= "- <span style='color:green;'><b>Sucesso:</b> Nova visita de Supervisão foi criada!</span><br>";
+                $output .= "- <span style='color:green;'><b>Sucesso:</b> Nova visita de Supervisão criada!</span><br>";
                 $visitCreated = true;
             }
 
@@ -67,13 +71,13 @@ Route::get('/recalculate-visits', function () {
                 $output .= "- Resultado: Nenhuma nova visita foi necessária.<br>";
             }
 
-            $output .= "Verificação concluída.<br><br>";
+            $output .= "Verificação concluída para este ambiente.<br><br>";
         } else {
-            $output .= "- Paciente: {$patient->name} não possui atendimentos. Pulando...<br><br>";
+            $output .= "- Resultado: Paciente não possui agendamentos de ABA neste ambiente. Pulando...<br><br>";
         }
     }
 
-    $output .= "<b>Recálculo finalizado!</b>";
+    $output .= "<b>✅ Recálculo finalizado com sucesso!</b>";
 
     return $output;
 });

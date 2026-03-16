@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\PatientService;
 use App\Models\Visit;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AppointmentObserver
 {
@@ -35,8 +36,16 @@ class AppointmentObserver
         }
 
         // 2. Busca quem são os coordenadores/supervisores DESTE paciente NESSE ambiente (Clínica, Escola, etc)
+        // 🛡️ Ajuste: Se o appointment estiver sem ambiente, ele tenta achar o principal do paciente.
+        $ambienteBusca = $appointment->service_type_id;
+        if (!$ambienteBusca) {
+             $vinculoPadrao = PatientService::where('patient_id', $appointment->patient_id)->first();
+             if (!$vinculoPadrao) return;
+             $ambienteBusca = $vinculoPadrao->service_type_id;
+        }
+
         $patientService = PatientService::where('patient_id', $appointment->patient_id)
-            ->where('service_type_id', $appointment->service_type_id)
+            ->where('service_type_id', $ambienteBusca)
             ->first();
 
         // Se o paciente não tiver a equipe cadastrada para esse ambiente, o robô não faz nada
@@ -71,28 +80,29 @@ class AppointmentObserver
             return;
         }
 
-        // 2. Verifica pendência para ESTE paciente, NESTE ambiente
+        // 2. Verifica pendência para ESTE paciente, NESTE ambiente (ou nulo)
         if (Visit::where('patient_id', $patientService->patient_id)
-            ->where('service_type_id', $patientService->service_type_id)
-            ->where('type', $type)
-            ->where('status', VisitStatus::Pending)
+            ->where(fn($q) => $q->where('service_type_id', $patientService->service_type_id)->orWhereNull('service_type_id'))
+            ->where('type', $type->value) // 🛡️ Ajuste: Enum blindado
+            ->where('status', VisitStatus::Pending->value) // 🛡️ Ajuste: Enum blindado
             ->exists()) {
             return;
         }
 
-        // 3. Encontra a última completada NESTE ambiente
+        // 3. Encontra a última completada NESTE ambiente (ou nulo)
         $lastCompletedVisit = Visit::where('patient_id', $patientService->patient_id)
-            ->where('service_type_id', $patientService->service_type_id)
-            ->where('type', $type)
-            ->where('status', VisitStatus::Completed)
+            ->where(fn($q) => $q->where('service_type_id', $patientService->service_type_id)->orWhereNull('service_type_id'))
+            ->where('type', $type->value) // 🛡️ Ajuste: Enum blindado
+            ->where('status', VisitStatus::Completed->value) // 🛡️ Ajuste: Enum blindado
             ->latest('happened_at')
             ->first();
 
         $countStartDate = $lastCompletedVisit ? $lastCompletedVisit->happened_at : null;
 
-        // 4. Busca os agendamentos de ABA, isolando apenas por este ambiente (ex: apenas Clínica)
+        // 4. Busca os agendamentos de ABA
         $appointmentsQuery = Appointment::where('patient_id', $patientService->patient_id)
             ->where('service_type_id', $patientService->service_type_id)
+            ->where('appointment_date', '<=', Carbon::today())
             ->whereHas('therapy', fn ($query) => $query->where('name', 'ABA'));
 
         if ($countStartDate) {
@@ -108,8 +118,8 @@ class AppointmentObserver
                 'patient_id'      => $patientService->patient_id,
                 'service_type_id' => $patientService->service_type_id,
                 'professional_id' => $professional_id,
-                'type'            => $type,
-                'status'          => VisitStatus::Pending,
+                'type'            => $type->value,
+                'status'          => VisitStatus::Pending->value,
                 'happened_at'     => null,
                 'notes'           => "Gerado automaticamente após atingir a marca de {$daysThreshold} dias de atendimento ABA neste ambiente.",
             ]);
