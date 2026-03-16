@@ -17,8 +17,6 @@ Route::get('/', function () {
 
 Route::get('/recalculate-visits', function () {
     $observer = new AppointmentObserver();
-    
-    // Vamos varrer os VÍNCULOS em vez de pacientes soltos. Assim cobrimos todos os ambientes!
     $patientServices = PatientService::with('patient')->get();
     $output = "Iniciando recálculo de visitas (Modo Turbinado)...<br><br>";
 
@@ -87,11 +85,58 @@ Route::get('/disparar-aniversarios', function () {
     return 'E-mails de aniversário enviados com sucesso!';
 });
 
-// Route::get('/arrumar-visitas', function () {
-//     $idClinica = \App\Models\ServiceType::where('name', 'Clínica')->value('id');
-//     $atualizados = \App\Models\Visit::whereNull('service_type_id')->update(['service_type_id' => $idClinica]);
-//     return "Mágica feita! {$atualizados} visitas atualizadas para Clínica.";
-// });
+Route::get('/sync-ambientes', function () {
+    $output = "Iniciando a Máquina do Tempo de Ambientes... 🕰️<br><br>";
+
+    // ==========================================
+    // 1. O RESGATE (Criar os que estão faltando)
+    // ==========================================
+    $agendamentos = \App\Models\Appointment::whereNotNull('service_type_id')
+        ->select('patient_id', 'service_type_id')
+        ->distinct()
+        ->get();
+
+    $criados = 0;
+    foreach ($agendamentos as $agendamento) {
+        $vinculo = \App\Models\PatientService::firstOrCreate([
+            'patient_id' => $agendamento->patient_id,
+            'service_type_id' => $agendamento->service_type_id,
+        ]);
+        
+        if ($vinculo->wasRecentlyCreated) {
+            $criados++;
+        }
+    }
+    $output .= "✅ <b>{$criados}</b> vínculos fantasmas (pacientes invisíveis) foram criados.<br>";
+    $vinculos = \App\Models\PatientService::all();
+    $removidos = 0;
+
+    foreach ($vinculos as $vinculo) {
+        // Regra 1: Tem algum agendamento neste ambiente?
+        $temAgendamento = \App\Models\Appointment::where('patient_id', $vinculo->patient_id)
+            ->where('service_type_id', $vinculo->service_type_id)
+            ->exists();
+
+        // Regra 2: Tem alguma visita (Pendente ou Concluída) registrada neste ambiente?
+        $temVisita = \App\Models\Visit::where('patient_id', $vinculo->patient_id)
+            ->where(function($q) use ($vinculo) {
+                $q->where('service_type_id', $vinculo->service_type_id)
+                  ->orWhereNull('service_type_id'); 
+            })
+            ->exists();
+
+        if (!$temAgendamento && !$temVisita) {
+            $vinculo->delete();
+            $removidos++;
+        }
+    }
+    
+    $output .= "🧹 <b>{$removidos}</b> vínculos totalmente vazios foram removidos do painel.<br><br>";
+
+    $output .= "<b>Sincronização e Faxina concluídas com sucesso! 🎉</b>";
+
+    return $output;
+});
 
 Route::get('/gerar-acessos-admin', function () {
     $criados = 0;

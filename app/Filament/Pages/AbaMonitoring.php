@@ -34,11 +34,12 @@ class AbaMonitoring extends Page implements HasTable
     protected static ?string $slug = 'aba-monitoring';
     protected string $view = 'filament.pages.aba-monitoring';
 
-    public static function canViewAny(): bool
+    public static function canAccess(): bool
     {
         return auth()->user()?->is_admin ?? false;
     }
 
+    // 🚀 AS ABAS (TABS) RESTAURADAS AQUI!
     public function getTableTabs(): array
     {
         $tabs = [
@@ -65,6 +66,9 @@ class AbaMonitoring extends Page implements HasTable
                     ->sortable()
                     ->description(fn (PatientService $record) => $record->serviceType->name),
 
+                // ==========================================
+                // 🔹 COLUNA DE COORDENAÇÃO
+                // ==========================================
                 TextColumn::make('coordination_status')
                     ->label('Coordenação (Meta: 10)')
                     ->sortable(query: function (Builder $query, string $direction) {
@@ -89,14 +93,7 @@ class AbaMonitoring extends Page implements HasTable
                         ) {$direction}");
                     })
                     ->getStateUsing(function (PatientService $record) {
-                        $hasPending = Visit::where('patient_id', $record->patient_id)
-                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
-                            ->where('type', VisitType::Coordination->value)
-                            ->where('status', VisitStatus::Pending->value)
-                            ->exists();
-
-                        if ($hasPending) return '⚠️ Visita Pendente';
-
+                        // 1. FAZ A CONTAGEM PRIMEIRO
                         $lastVisit = Visit::where('patient_id', $record->patient_id)
                             ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
                             ->where('type', VisitType::Coordination->value)
@@ -108,7 +105,7 @@ class AbaMonitoring extends Page implements HasTable
                         
                         $query = Appointment::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
-                            ->where('appointment_date', '<=', Carbon::today()) // 🛡️ Trava contra o futuro!
+                            ->where('appointment_date', '<=', Carbon::today())
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
 
                         if ($startDate) {
@@ -116,6 +113,20 @@ class AbaMonitoring extends Page implements HasTable
                         }
 
                         $daysCount = $query->select(DB::raw('DATE(appointment_date) as date'))->groupBy('date')->get()->count();
+
+                        // 2. ALERTA VERMELHO COM OS DIAS INJETADOS E MENSAGEM ESPECÍFICA!
+                        if ($daysCount > 0 && empty($record->coordinator_id)) {
+                             return "🚨 Sem coordenador cadastrado ({$daysCount}/10 dias)";
+                        }
+
+                        // 3. VISITA PENDENTE
+                        $hasPending = Visit::where('patient_id', $record->patient_id)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Coordination->value)
+                            ->where('status', VisitStatus::Pending->value)
+                            ->exists();
+
+                        if ($hasPending) return '⚠️ Visita Pendente';
 
                         if ($daysCount === 0) return '✅ Em dia (0 dias)';
                         
@@ -139,11 +150,15 @@ class AbaMonitoring extends Page implements HasTable
                     })
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
+                        str_starts_with($state, '🚨') => 'danger', // Lendo o prefixo!
                         $state === '⚠️ Visita Pendente' => 'warning',
                         $state === '✅ Em dia (0 dias)' => 'success',
                         default => 'info',
                     }),
 
+                // ==========================================
+                // 🔹 COLUNA DE SUPERVISÃO
+                // ==========================================
                 TextColumn::make('supervision_status')
                     ->label('Supervisão (Meta: 20)')
                     ->sortable(query: function (Builder $query, string $direction) {
@@ -168,14 +183,7 @@ class AbaMonitoring extends Page implements HasTable
                         ) {$direction}");
                     })
                     ->getStateUsing(function (PatientService $record) {
-                        $hasPending = Visit::where('patient_id', $record->patient_id)
-                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
-                            ->where('type', VisitType::Supervision->value)
-                            ->where('status', VisitStatus::Pending->value)
-                            ->exists();
-
-                        if ($hasPending) return '⚠️ Visita Pendente';
-
+                        // 1. FAZ A CONTAGEM PRIMEIRO
                         $lastVisit = Visit::where('patient_id', $record->patient_id)
                             ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
                             ->where('type', VisitType::Supervision->value)
@@ -187,7 +195,7 @@ class AbaMonitoring extends Page implements HasTable
 
                         $query = Appointment::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
-                            ->where('appointment_date', '<=', Carbon::today()) // 🛡️ Trava contra o futuro!
+                            ->where('appointment_date', '<=', Carbon::today())
                             ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'));
 
                         if ($startDate) {
@@ -195,6 +203,20 @@ class AbaMonitoring extends Page implements HasTable
                         }
 
                         $daysCount = $query->select(DB::raw('DATE(appointment_date) as date'))->groupBy('date')->get()->count();
+
+                        // 2. ALERTA VERMELHO COM OS DIAS INJETADOS E MENSAGEM ESPECÍFICA!
+                        if ($daysCount > 0 && empty($record->supervisor_id)) {
+                             return "🚨 Sem supervisor cadastrado ({$daysCount}/20 dias)";
+                        }
+
+                        // 3. VISITA PENDENTE
+                        $hasPending = Visit::where('patient_id', $record->patient_id)
+                            ->where(fn($q) => $q->where('service_type_id', $record->service_type_id)->orWhereNull('service_type_id'))
+                            ->where('type', VisitType::Supervision->value)
+                            ->where('status', VisitStatus::Pending->value)
+                            ->exists();
+
+                        if ($hasPending) return '⚠️ Visita Pendente';
 
                         if ($daysCount === 0) return '✅ Em dia (0 dias)';
                         
@@ -218,6 +240,7 @@ class AbaMonitoring extends Page implements HasTable
                     })
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
+                        str_starts_with($state, '🚨') => 'danger', // Lendo o prefixo!
                         $state === '⚠️ Visita Pendente' => 'warning',
                         $state === '✅ Em dia (0 dias)' => 'success',
                         default => 'info',
@@ -227,7 +250,8 @@ class AbaMonitoring extends Page implements HasTable
                 SelectFilter::make('service_type_id')
                     ->label('Ambiente (ABA)')
                     ->options(\App\Models\ServiceType::pluck('name', 'id'))
-                    ->placeholder('Todos os Ambientes'),
+                    ->placeholder('Todos os Ambientes')
+                    ->hidden(),
 
                 SelectFilter::make('unit_id')
                     ->label('Unidade')

@@ -7,7 +7,7 @@ use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
-use Illuminate\Database\Eloquent\Builder; // <-- Importação do Filtro
+use Illuminate\Database\Eloquent\Builder;
 
 class ManageActivities extends ManageRecords
 {
@@ -20,6 +20,7 @@ class ManageActivities extends ManageRecords
         ];
     }
 
+
     public function getTabs(): array
     {
         return [
@@ -28,7 +29,6 @@ class ManageActivities extends ManageRecords
 
             'atualizacoes' => Tab::make('Atualizações')
                 ->icon('heroicon-m-pencil-square')
-                // Mostra apenas edições
                 ->modifyQueryUsing(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->where('event', 'updated')),
 
             'entradas_saidas' => Tab::make('Entradas e Saídas')
