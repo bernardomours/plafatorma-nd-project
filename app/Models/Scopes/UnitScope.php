@@ -5,7 +5,7 @@ namespace App\Models\Scopes;
 use App\Models\Appointment;
 use App\Models\RequestedService;
 use App\Models\Schedule;
-use App\Models\Professional; // Importante: Adicionado o model Professional
+use App\Models\Professional; 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -30,7 +30,6 @@ class UnitScope implements Scope
             $userUnitIds[] = $user->unit_id;
         } else {
             // O Truque do E-mail: Busca no profissional ignorando bloqueios temporariamente
-            // (Agora usando a relação 'units' em vez da coluna apagada 'unit_id')
             $profissional = Professional::withoutGlobalScopes()
                                 ->with('units')
                                 ->where('email', $user->email)
@@ -63,7 +62,6 @@ class UnitScope implements Scope
             $modelClass === Schedule::class
         ) {
             $builder->whereHas('patient', function (Builder $query) use ($isMossoro, $mossoroUnitId) {
-                // Mantém sua lógica original intacta para pacientes
                 if ($isMossoro) {
                     $query->where('unit_id', $mossoroUnitId);
                 } else {
@@ -72,17 +70,22 @@ class UnitScope implements Scope
             });
         } 
         
-        // REGRA B: A NOVA REGRA DO PROFISSIONAL (Cruzamento Exato)
-        // Se o usuário for de Natal (ex: id 3), só verá profissionais que tenham a unidade 3 vinculada.
+        // REGRA B: A NOVA REGRA DO PROFISSIONAL (Alinhada com a regra de Natal/Mossoró)
         elseif ($modelClass === Professional::class) {
-            $builder->whereHas('units', function (Builder $query) use ($userUnitIds) {
-                $query->whereIn('units.id', $userUnitIds);
+            $builder->whereHas('units', function (Builder $query) use ($isMossoro, $mossoroUnitId) {
+                if ($isMossoro) {
+                    // Mossoró só vê profissionais de Mossoró
+                    $query->where('units.id', $mossoroUnitId);
+                } else {
+                    // Regra VIP do Interior: Se não é de Mossoró, pode ver TODOS os profissionais 
+                    // de Natal, João Câmara e Santa Cruz (tudo que NÃO for Mossoró)
+                    $query->where('units.id', '!=', $mossoroUnitId);
+                }
             });
         }
         
         // REGRA C: Todos os outros modelos (Pacientes, Visitas, etc) que ainda possuem a coluna unit_id
         else {
-            // Mantém sua lógica original intacta para o resto do sistema
             if ($isMossoro) {
                 $builder->where($model->getTable() . '.unit_id', $mossoroUnitId);
             } else {
