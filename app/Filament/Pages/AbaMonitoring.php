@@ -34,11 +34,30 @@ class AbaMonitoring extends Page implements HasTable
     protected static ?string $slug = 'aba-monitoring';
     protected string $view = 'filament.pages.aba-monitoring';
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()?->is_admin ?? false;
-    }
+    // public static function canAccess(): bool
+    // {
+    //     return auth()->user()?->is_admin ?? false;
+    // }
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        if ($user?->is_admin) {
+            return true;
+        }
+
+        $profissional = \App\Models\Professional::withoutGlobalScopes()
+                            ->where('email', $user->email)
+                            ->first();
+
+        // A CHAVE DE OURO: Adicionamos o ->value depois de role
+        if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
+            return false; 
+        }
+        
+        return true;
+    }
     // 🚀 AS ABAS (TABS) RESTAURADAS AQUI!
     public function getTableTabs(): array
     {
