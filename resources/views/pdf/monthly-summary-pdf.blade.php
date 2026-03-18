@@ -14,7 +14,8 @@
         .clear { clear: both; }
         
         .widgets-table { width: 100%; margin-bottom: 15px; border-spacing: 8px; border-collapse: separate; }
-        .widget-card { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; vertical-align: top; width: 24%; }        .widget-title { font-size: 9px; color: #6B7280; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .widget-card { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; vertical-align: top; width: 24%; }        
+        .widget-title { font-size: 9px; color: #6B7280; text-transform: uppercase; margin-bottom: 6px; display: block; }
         .widget-value { font-size: 18px; font-weight: bold; color: #111827; }
         .widget-list { margin: 4px 0 0 0; padding-left: 12px; font-size: 9px; color: #374151; list-style-type: none; }
         .widget-list li { margin-bottom: 2px; border-bottom: 1px solid #eee; padding-bottom: 2px; }
@@ -53,6 +54,7 @@
         <div class="info-container">
             <h1>Relatório de Atendimentos</h1>
             <p>Emitido em: {{ now()->timezone('America/Fortaleza')->format('d/m/Y H:i') }}</p>
+            <p><strong>Unidade(s):</strong> {{ $nomesUnidades }}</p>
         </div>
         <div class="clear"></div>
     </header>

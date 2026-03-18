@@ -11,6 +11,7 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Therapy;
 use App\Models\Agreement;
+use App\Models\Unit;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -38,7 +39,7 @@ class AttendanceReports extends Page implements HasTable
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
     public ?array $unidades = [];
-    public ?string $agreement_id = null; // <-- NOVO: Variável do Convênio
+    public ?string $agreement_id = null;
 
     public function mount(): void
     {
@@ -73,7 +74,7 @@ class AttendanceReports extends Page implements HasTable
                             ->label('Ano')
                             ->options(['2025' => '2025', '2026' => '2026', '2027' => '2027']),
 
-                        Select::make('agreement_id') // <-- NOVO: Filtro de Convênio
+                        Select::make('agreement_id')
                             ->label('Convênio')
                             ->options(\App\Models\Agreement::pluck('name', 'id'))
                             ->searchable()
@@ -98,7 +99,7 @@ class AttendanceReports extends Page implements HasTable
                             ->searchable()
                             ->placeholder('Todas as unidades'),
                             
-                    ])->columns(3), // <-- Alterado de 5 para 3 para criar duas linhas organizadas
+                    ])->columns(3),
             ]);
     }
 
@@ -110,7 +111,7 @@ class AttendanceReports extends Page implements HasTable
             patient_id: $this->patient_id, 
             therapy_id: $this->therapy_id,
             unidades: $this->unidades,
-            agreement_id: $this->agreement_id // <-- NOVO: Enviando para os gráficos
+            agreement_id: $this->agreement_id
         );
     }
 
@@ -185,7 +186,7 @@ class AttendanceReports extends Page implements HasTable
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('danger')
                 ->form([
-                    \Filament\Forms\Components\Select::make('mes')
+                    Select::make('mes')
                         ->label('Mês de Referência')
                         ->options([
                             '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março',
@@ -196,7 +197,7 @@ class AttendanceReports extends Page implements HasTable
                         ->default(date('m'))
                         ->required(),
                     
-                    \Filament\Forms\Components\Select::make('ano')
+                    Select::make('ano')
                         ->label('Ano de Referência')
                         ->options([
                             '2025' => '2025', 
@@ -206,98 +207,99 @@ class AttendanceReports extends Page implements HasTable
                         ->default(date('Y'))
                         ->required(),
 
-                    // <-- NOVO: Adicionado também no PDF
-                    \Filament\Forms\Components\Select::make('agreement_id')
+                    Select::make('agreement_id')
                         ->label('Convênio')
-                        ->options(\App\Models\Agreement::pluck('name', 'id'))
+                        ->options(Agreement::pluck('name', 'id'))
                         ->searchable()
                         ->placeholder('Todos os convênios'),
 
-                    \Filament\Forms\Components\Select::make('unidades')
+                    Select::make('unidades')
                         ->label('Unidade(s)')
-                        ->options(\App\Models\Unit::pluck('city', 'id')) 
+                        ->options(Unit::pluck('city', 'id')) 
                         ->multiple() 
                         ->searchable()
                         ->placeholder('Todas as unidades'),
                ])
                ->action(function (array $data) {
-                    $mes = $data['mes'];
-                    $ano = $data['ano'];
-                    $unidades = $data['unidades'] ?? []; 
-                    $agreementId = $data['agreement_id'] ?? null;
+                $mes = $data['mes'];
+                $ano = $data['ano'];
+                $unidades = $data['unidades'] ?? []; 
+                $agreementId = $data['agreement_id'] ?? null;
 
-                    // 1. Filtramos Mês, Ano, Unidades e Convênio
-                    $query = Appointment::query()
-                        ->whereMonth('appointments.appointment_date', $mes)
-                        ->whereYear('appointments.appointment_date', $ano)
-                        ->when($this->therapy_id, fn ($q) => $q->where('appointments.therapy_id', $this->therapy_id))
-                        ->when(!empty($unidades), fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->whereIn('unit_id', $unidades)))
-                        // <-- NOVO: Filtro aplicado aos números do PDF
-                        ->when($agreementId, fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->where('agreement_id', $agreementId)));
+                $nomesUnidades = 'Todas as Unidades';
+                if (!empty($unidades)) {
+                    $nomesUnidades = \App\Models\Unit::whereIn('id', $unidades)->pluck('city')->join(', ');
+                }
 
-                    // 2. Calculamos as ESTATÍSTICAS
-                    $totalSessoes = (clone $query)->sum('session_number');
-                    $totalAppointments = (clone $query)->count(); 
-                    
-                    $startDate = \Carbon\Carbon::createFromDate($ano, $mes, 1)->startOfMonth();
-                    $endDate = $startDate->copy()->endOfMonth();
-                    $diasNoMes = $startDate->diffInDays($endDate) + 1;
-                    $mediaDiaria = ($diasNoMes > 0) ? number_format($totalAppointments / $diasNoMes, 2, ',', '.') : '0,00';
+                $query = Appointment::query()
+                    ->whereMonth('appointments.appointment_date', $mes)
+                    ->whereYear('appointments.appointment_date', $ano)
+                    ->when($this->therapy_id, fn ($q) => $q->where('appointments.therapy_id', $this->therapy_id))
+                    ->when(!empty($unidades), fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->whereIn('unit_id', $unidades)))
+                    ->when($agreementId, fn ($q) => $q->whereHas('patient', fn ($queryPaciente) => $queryPaciente->where('agreement_id', $agreementId)));
 
-                    $sessoesPorTerapia = (clone $query)
-                        ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-                        ->select('therapies.name', DB::raw('SUM(appointments.session_number) as total'))
-                        ->groupBy('therapies.name')
-                        ->pluck('total', 'therapies.name');
+                $totalSessoes = (clone $query)->sum('session_number');
+                
+                // Pegamos as ESTATÍSTICAS
+                $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+                $evolucaoDiaria = (clone $query)->select(
+                    $isSqlite 
+                        ? DB::raw("strftime('%d', appointments.appointment_date) as dia")
+                        : DB::raw("DATE_FORMAT(appointments.appointment_date, '%d') as dia"),
+                    DB::raw('SUM(appointments.session_number) as total')
+                )
+                ->groupBy('dia')
+                ->pluck('total', 'dia');
 
-                    $sessoesPorConvenio = (clone $query)
-                        ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                        ->join('agreements', 'patients.agreement_id', '=', 'agreements.id')
-                        ->select('agreements.name', DB::raw('SUM(appointments.session_number) as total'))
-                        ->groupBy('agreements.name')
-                        ->pluck('total', 'agreements.name');
+                // 🌟 A NOVA LÓGICA DA MÉDIA DIÁRIA: 
+                // Conta exatamente quantos dias tiveram pelo menos 1 sessão registrada
+                $diasComAtendimento = $evolucaoDiaria->count(); 
+                
+                // Divide o total de sessões pelos dias com atendimento
+                $mediaDiaria = ($diasComAtendimento > 0) ? number_format($totalSessoes / $diasComAtendimento, 2, ',', '.') : '0,00';
 
-                    // 3. A CORREÇÃO DO ZERO À ESQUERDA PARA O GRÁFICO DO PDF
-                    $isSqlite = DB::connection()->getDriverName() === 'sqlite';
-                    $evolucaoDiaria = (clone $query)->select(
+                $sessoesPorTerapia = (clone $query)
+                    ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                    ->select('therapies.name', DB::raw('SUM(appointments.session_number) as total'))
+                    ->groupBy('therapies.name')
+                    ->pluck('total', 'therapies.name');
+
+                $sessoesPorConvenio = (clone $query)
+                    ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+                    ->join('agreements', 'patients.agreement_id', '=', 'agreements.id')
+                    ->select('agreements.name', DB::raw('SUM(appointments.session_number) as total'))
+                    ->groupBy('agreements.name')
+                    ->pluck('total', 'agreements.name');
+
+                $resumo = (clone $query)
+                    ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+                    ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                    ->select(
                         $isSqlite 
-                            ? DB::raw("strftime('%d', appointments.appointment_date) as dia")
-                            : DB::raw("DATE_FORMAT(appointments.appointment_date, '%d') as dia"),
-                        DB::raw('SUM(appointments.session_number) as total')
+                            ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
+                            : DB::raw("DATE_FORMAT(appointments.appointment_date, '%m/%Y') as reference_month"),
+                        'patients.name as patient_name',
+                        'therapies.name as therapy_name',
+                        DB::raw('SUM(appointments.session_number) as total_sessions')
                     )
-                    ->groupBy('dia')
-                    ->pluck('total', 'dia');
+                    ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patients.name', 'therapies.name')
+                    ->orderBy('patients.name', 'asc')
+                    ->get();
 
-                    // 4. Buscamos os DADOS DA TABELA principal
-                    $resumo = (clone $query)
-                        ->join('patients', 'appointments.patient_id', '=', 'patients.id')
-                        ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
-                        ->select(
-                            $isSqlite 
-                                ? DB::raw("strftime('%m/%Y', appointments.appointment_date) as reference_month")
-                                : DB::raw("DATE_FORMAT(appointments.appointment_date, '%m/%Y') as reference_month"),
-                            'patients.name as patient_name',
-                            'therapies.name as therapy_name',
-                            DB::raw('SUM(appointments.session_number) as total_sessions')
-                        )
-                        ->groupBy('reference_month', 'patients.id', 'therapies.id', 'patients.name', 'therapies.name')
-                        ->orderBy('patients.name', 'asc')
-                        ->get();
+                $pdf = Pdf::loadView('pdf.monthly-summary-pdf', [
+                    'mesSelecionado' => $mes,
+                    'anoSelecionado' => $ano,
+                    'nomesUnidades' => $nomesUnidades,
+                    'resumo' => $resumo,
+                    'totalSessoes' => $totalSessoes,
+                    'mediaDiaria' => $mediaDiaria,
+                    'sessoesPorTerapia' => $sessoesPorTerapia,
+                    'sessoesPorConvenio' => $sessoesPorConvenio,
+                    'evolucaoDiaria' => $evolucaoDiaria,
+                ]);
 
-                    // 5. Injetamos tudo no PDF
-                    $pdf = Pdf::loadView('pdf.monthly-summary-pdf', [
-                        'mesSelecionado' => $mes,
-                        'anoSelecionado' => $ano,
-                        'resumo' => $resumo,
-                        'totalSessoes' => $totalSessoes,
-                        'mediaDiaria' => $mediaDiaria,
-                        'sessoesPorTerapia' => $sessoesPorTerapia,
-                        'sessoesPorConvenio' => $sessoesPorConvenio,
-                        'evolucaoDiaria' => $evolucaoDiaria,
-                    ]);
-
-                    return response()->streamDownload(fn () => print($pdf->output()), "relatorio-atendimentos-{$mes}-{$ano}.pdf");
-               })
+                return response()->streamDownload(fn () => print($pdf->output()), "relatorio-atendimentos-{$mes}-{$ano}.pdf");
+           })
         ];
     }
 }

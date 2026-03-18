@@ -18,7 +18,7 @@ Route::get('/', function () {
 Route::get('/recalculate-visits', function () {
     $observer = new AppointmentObserver();
     $patientServices = PatientService::with('patient')->get();
-    $output = "Iniciando recálculo de visitas (Modo Turbinado)...<br><br>";
+    $output = "Iniciando recálculo de visitas...<br><br>";
 
     foreach ($patientServices as $service) {
         $patient = $service->patient;
@@ -35,43 +35,21 @@ Route::get('/recalculate-visits', function () {
             ->first();
 
         if ($validAppointment) {
-            $before_counts = Patient::withCount([
-                'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination->value)->where('status', VisitStatus::Pending->value),
-                'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision->value)->where('status', VisitStatus::Pending->value),
-            ])->find($patient->id);
-
-            $before_coord_count = $before_counts->pending_coordination_visits_count;
-            $before_super_count = $before_counts->pending_supervision_visits_count;
-
             $output .= "-> Acionando o observador para recalcular...<br>";
-
             $observer->created($validAppointment);
-
-            $after_counts = Patient::withCount([
-                'visits as pending_coordination_visits_count' => fn ($q) => $q->where('type', VisitType::Coordination->value)->where('status', VisitStatus::Pending->value),
-                'visits as pending_supervision_visits_count' => fn ($q) => $q->where('type', VisitType::Supervision->value)->where('status', VisitStatus::Pending->value),
-            ])->find($patient->id);
-
-            $after_coord_count = $after_counts->pending_coordination_visits_count;
-            $after_super_count = $after_counts->pending_supervision_visits_count;
-
-            $visitCreated = false;
-            if ($after_coord_count > $before_coord_count) {
-                $output .= "- <span style='color:green;'><b>Sucesso:</b> Nova visita de Coordenação criada!</span><br>";
-                $visitCreated = true;
-            }
-            if ($after_super_count > $before_super_count) {
-                $output .= "- <span style='color:green;'><b>Sucesso:</b> Nova visita de Supervisão criada!</span><br>";
-                $visitCreated = true;
-            }
-
-            if (!$visitCreated) {
-                $output .= "- Resultado: Nenhuma nova visita foi necessária.<br>";
-            }
-
-            $output .= "Verificação concluída para este ambiente.<br><br>";
+            $output .= "- <span style='color:green;'>Observer rodou com sucesso!</span><br><br>";
         } else {
-            $output .= "- Resultado: Paciente não possui agendamentos de ABA neste ambiente. Pulando...<br><br>";
+            // 🚨 O PULO DO GATO: Não tem agendamento? Então limpa o lixo!
+            $deleted = Visit::where('patient_id', $patient->id)
+                ->where(fn($q) => $q->where('service_type_id', $service->service_type_id)->orWhereNull('service_type_id'))
+                ->where('status', VisitStatus::Pending->value)
+                ->delete();
+
+            if ($deleted) {
+                $output .= "- <span style='color:orange;'>⚠️ Limpeza: {$deleted} visita(s) pendente(s) órfã(s) apagada(s) pois o ambiente ficou vazio.</span><br><br>";
+            } else {
+                $output .= "- Resultado: Sem agendamentos e sem visitas órfãs. Tudo limpo.<br><br>";
+            }
         }
     }
 

@@ -73,12 +73,9 @@ class PatientForm
                                 name: 'coordinator',
                                 titleAttribute: 'name',
                                 modifyQueryUsing: function (Builder $query, $get) {
-                                    $pacienteUnitId = $get('../../unit_id'); 
-                                    
-                                    // 1. Filtra rigorosamente para mostrar SÓ Coordenadores
+                                    $pacienteUnitId = $get('../../unit_id');                                   
                                     $query->where('role', 'coordinator'); 
                                     
-                                    // 2. Filtro de unidade
                                     if ($pacienteUnitId) {
                                         $query->whereHas('units', fn ($subQuery) => $subQuery->where('units.id', $pacienteUnitId));
                                     }
@@ -97,10 +94,8 @@ class PatientForm
                                 modifyQueryUsing: function (Builder $query, $get) {
                                     $pacienteUnitId = $get('../../unit_id');
                                     
-                                    // 1. Filtra rigorosamente para mostrar SÓ Supervisores
                                     $query->where('role', 'supervisor');
                                     
-                                    // 2. Filtro de unidade
                                     if ($pacienteUnitId) {
                                         $query->whereHas('units', fn ($subQuery) => $subQuery->where('units.id', $pacienteUnitId));
                                     }
