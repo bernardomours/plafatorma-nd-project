@@ -63,11 +63,14 @@ class AppointmentForm
             ->components([
                 Select::make('patient_id')
                     ->label('Nome')
-                    ->relationship('patient', 'name')
+                    ->relationship(
+                        name: 'patient', 
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (\Illuminate\Database\Eloquent\Builder $query) => $query->withTrashed()
+                    )
                     ->required()
                     ->preload()
                     ->searchable()
-                    ->withTrashed()
                     ->live()
                     ->afterStateUpdated($updateSessionNumber),
                 DatePicker::make('appointment_date')
@@ -100,11 +103,14 @@ class AppointmentForm
                     ->required(),
                 Select::make('professional_id')
                     ->label('Profissional')
-                    ->relationship('professional', 'name')
+                    ->relationship(
+                        name: 'professional', 
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (\Illuminate\Database\Eloquent\Builder $query) => $query->withTrashed()
+                    )
                     ->required()
                     ->preload()
                     ->searchable()
-                    ->withTrashed()
                     ->live(),
                 TextInput::make('session_number') #preenchido automaticamente
                     ->label('Qtd de Sessões')
