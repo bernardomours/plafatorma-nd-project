@@ -67,6 +67,7 @@ class AppointmentForm
                     ->required()
                     ->preload()
                     ->searchable()
+                    ->withTrashed()
                     ->live()
                     ->afterStateUpdated($updateSessionNumber),
                 DatePicker::make('appointment_date')
@@ -103,6 +104,7 @@ class AppointmentForm
                     ->required()
                     ->preload()
                     ->searchable()
+                    ->withTrashed()
                     ->live(),
                 TextInput::make('session_number') #preenchido automaticamente
                     ->label('Qtd de Sessões')

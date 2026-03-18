@@ -66,17 +66,17 @@ class Appointment extends Model
 
     public function patient(): BelongsTo
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Patient::class)->withTrashed();
     }
 
     public function professional(): BelongsTo
     {
-        return $this->belongsTo(Professional::class);
+        return $this->belongsTo(Professional::class)->withTrashed();
     }
 
     public function therapy(): BelongsTo
     {
-        return $this->belongsTo(Therapy::class);
+        return $this->belongsTo(Therapy::class)->withTrashed();
     }
 
     public function unit(): BelongsTo
