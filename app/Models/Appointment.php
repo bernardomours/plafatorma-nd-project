@@ -76,7 +76,7 @@ class Appointment extends Model
 
     public function therapy(): BelongsTo
     {
-        return $this->belongsTo(Therapy::class)->withTrashed();
+        return $this->belongsTo(Therapy::class);
     }
 
     public function unit(): BelongsTo
