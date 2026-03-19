@@ -71,7 +71,7 @@ class AppointmentStats extends BaseWidget
                 ->color('success'),
             
             Stat::make('Total de Atendimentos', $totalAppointments)
-                ->description('Quantidade de registros (visitas) no sistema')
+                ->description('Quantidade de registros no sistema')
                 ->descriptionIcon('heroicon-m-clipboard-document-list')
                 ->color('info'),
         ];
