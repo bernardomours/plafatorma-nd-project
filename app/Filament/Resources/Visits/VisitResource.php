@@ -21,11 +21,11 @@ class VisitResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-eye';
 
-    protected static ?string $modelLabel = 'Coordenação/Supervisão';
-    protected static ?string $pluralModelLabel = 'Coordenação/Supervisão';
-    protected static ?string $navigationLabel = 'Coordenação/Supervisão';
+    protected static ?string $modelLabel = 'Acompanhamento';
+    protected static ?string $pluralModelLabel = 'Acompanhamentos';
+    protected static ?string $navigationLabel = 'Acompanhamentos';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Frequência';
+    protected static string|UnitEnum|null $navigationGroup = 'Coordenação/Supervisão';
 
     public static function form(Schema $schema): Schema
     {

@@ -65,7 +65,6 @@ class VisitsTable
                                 '2027' => '2027',
                                 '2028' => '2028'
                             ])
-                            ->default(date('Y')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

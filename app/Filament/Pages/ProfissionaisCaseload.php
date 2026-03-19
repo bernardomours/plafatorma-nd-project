@@ -23,8 +23,8 @@ class ProfissionaisCaseload extends Page implements HasTable, HasForms
     use InteractsWithTable, InteractsWithForms;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
-    protected static ?string $title = 'Carga de Pacientes';
-    protected static string|UnitEnum|null $navigationGroup = 'Gerência';
+    protected static ?string $title = 'Vínculos de Pacientes';
+    protected static string|UnitEnum|null $navigationGroup = 'Coordenação/Supervisão';
     protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.pages.profissionais-caseload';

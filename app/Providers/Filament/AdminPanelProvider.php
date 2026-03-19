@@ -46,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 'Frequência',
+                'Coordenação/Supervisão',
                 'Ocupação',
                 'Gerência',
                 'Serviços',
