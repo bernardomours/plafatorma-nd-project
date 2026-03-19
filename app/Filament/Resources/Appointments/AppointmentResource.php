@@ -9,6 +9,7 @@ use App\Filament\Resources\Appointments\Schemas\AppointmentForm;
 use App\Filament\Resources\Appointments\Tables\AppointmentsTable;
 use App\Filament\Resources\Appointments\Pages\AttendanceReports;
 use App\Models\Appointment;
+use App\Models\Professional;
 use BackedEnum;
 use Filament\Navigation\NavigationItem;
 use UnitEnum;
@@ -44,7 +45,7 @@ class AppointmentResource extends Resource
             return true;
         }
 
-        $profissional = \App\Models\Professional::withoutGlobalScopes()
+        $profissional = Professional::withoutGlobalScopes()
                             ->where('email', $user->email)
                             ->first();
 

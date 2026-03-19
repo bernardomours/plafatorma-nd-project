@@ -58,7 +58,7 @@ class AbaMonitoring extends Page implements HasTable
         
     
     }
-    // 🚀 AS ABAS (TABS) RESTAURADAS AQUI!
+
     public function getTableTabs(): array
     {
         $tabs = [

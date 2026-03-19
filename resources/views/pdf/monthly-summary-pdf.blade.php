@@ -13,8 +13,11 @@
         .info-container p { margin: 4px 0 0 0; font-size: 11px; color: #7F8C8D; }
         .clear { clear: both; }
         
-        .widgets-table { width: 100%; margin-bottom: 15px; border-spacing: 8px; border-collapse: separate; }
-        .widget-card { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; vertical-align: top; width: 24%; }        
+        .widgets-table { width: 100%; margin-bottom: 15px; border-spacing: 6px; border-collapse: separate; }
+        
+        /* 🌟 MUDOU AQUI: A largura agora é 19% para caberem 5 cards lado a lado */
+        .widget-card { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; vertical-align: top; width: 19%; }        
+        
         .widget-title { font-size: 9px; color: #6B7280; text-transform: uppercase; margin-bottom: 6px; display: block; }
         .widget-value { font-size: 18px; font-weight: bold; color: #111827; }
         .widget-list { margin: 4px 0 0 0; padding-left: 12px; font-size: 9px; color: #374151; list-style-type: none; }
@@ -54,7 +57,7 @@
         <div class="info-container">
             <h1>Relatório de Atendimentos</h1>
             <p>Emitido em: {{ now()->timezone('America/Fortaleza')->format('d/m/Y H:i') }}</p>
-            <p><strong>Unidade(s):</strong> {{ $nomesUnidades }}</p>
+            <p><strong>Unidade(s) Filtrada(s):</strong> {{ $nomesUnidades }}</p>
         </div>
         <div class="clear"></div>
     </header>
@@ -63,7 +66,7 @@
         <table class="widgets-table">
             <tr>
                 <td class="widget-card">
-                    <span class="widget-title">Total de Sessões (Mês)</span>
+                    <span class="widget-title">Total de Sessões</span>
                     <span class="widget-value">{{ $totalSessoes }}</span>
                 </td>
                 <td class="widget-card">
@@ -71,7 +74,15 @@
                     <span class="widget-value">{{ $mediaDiaria }}</span>
                 </td>
                 <td class="widget-card">
-                    <span class="widget-title">Sessões por Terapia</span>
+                    <span class="widget-title">Por Unidade</span>
+                    <ul class="widget-list">
+                        @foreach($sessoesPorUnidade as $unidade => $total)
+                            <li><strong>{{ $unidade }}:</strong> {{ $total }}</li>
+                        @endforeach
+                    </ul>
+                </td>
+                <td class="widget-card">
+                    <span class="widget-title">Por Terapia</span>
                     <ul class="widget-list">
                         @foreach($sessoesPorTerapia as $terapia => $total)
                             <li><strong>{{ $terapia }}:</strong> {{ $total }}</li>
@@ -79,7 +90,7 @@
                     </ul>
                 </td>
                 <td class="widget-card">
-                    <span class="widget-title">Sessões por Convênio</span>
+                    <span class="widget-title">Por Convênio</span>
                     <ul class="widget-list">
                         @foreach($sessoesPorConvenio as $convenio => $total)
                             <li><strong>{{ $convenio }}:</strong> {{ $total }}</li>
@@ -96,8 +107,6 @@
                     @php
                         $diasNoMes = cal_days_in_month(CAL_GREGORIAN, (int)$mesSelecionado, (int)$anoSelecionado);
                         $maxDiario = $evolucaoDiaria->max() ?: 1;
-                        
-                        // Definimos a altura máxima da barra em pixels (px) para o PDF não se perder
                         $alturaMaximaPx = 35; 
                     @endphp
 
@@ -105,8 +114,6 @@
                         @php 
                             $diaPad = str_pad($i, 2, '0', STR_PAD_LEFT);
                             $valorDia = $evolucaoDiaria->get($diaPad, 0);
-                            
-                            // Agora a conta gera um valor em pixels, não mais em porcentagem
                             $alturaBarraPx = ($valorDia / $maxDiario) * $alturaMaximaPx;
                         @endphp
                         <td class="daily-bar-container">

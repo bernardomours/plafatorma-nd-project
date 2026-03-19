@@ -7,6 +7,7 @@ use App\Filament\Resources\Appointments\Widgets\AppointmentStats;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsByTypeChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsPerDayChart;
 use App\Filament\Resources\Appointments\Widgets\AppointmentsByAgreementChart;
+use App\Filament\Resources\Appointments\Widgets\AppointmentsByUnitChart;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Therapy;
@@ -53,13 +54,12 @@ class AttendanceReports extends Page implements HasTable
         }
     }
 
-    // O FORMULÁRIO DE FILTRO NO TOPO
     public function form(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema
     {
         return $schema
             ->statePath('')
             ->components([
-                \Filament\Schemas\Components\Section::make('Filtros Gerenciais')
+                Section::make('Filtros Gerenciais')
                     ->schema([
                         Select::make('mes')
                             ->label('Mês')
@@ -68,37 +68,35 @@ class AttendanceReports extends Page implements HasTable
                                 '04' => 'Abril', '05' => 'Maio', '06' => 'Junho',
                                 '07' => 'Julho', '08' => 'Agosto', '09' => 'Setembro',
                                 '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro',
-                            ]),
-                        
+                            ]),        
                         Select::make('ano')
                             ->label('Ano')
                             ->options(['2025' => '2025', '2026' => '2026', '2027' => '2027']),
 
                         Select::make('agreement_id')
                             ->label('Convênio')
-                            ->options(\App\Models\Agreement::pluck('name', 'id'))
+                            ->options(Agreement::pluck('name', 'id'))
                             ->searchable()
                             ->placeholder('Todos os convênios'),
 
                         Select::make('patient_id')
                             ->label('Paciente')
-                            ->options(\App\Models\Patient::pluck('name', 'id'))
+                            ->options(Patient::pluck('name', 'id'))
                             ->searchable()
                             ->placeholder('Todos os pacientes'),
 
                         Select::make('therapy_id')
                             ->label('Terapia')
-                            ->options(\App\Models\Therapy::pluck('name', 'id'))
+                            ->options(Therapy::pluck('name', 'id'))
                             ->searchable()
                             ->placeholder('Todas as terapias'),
                             
                         Select::make('unidades')
                             ->label('Unidade(s)')
-                            ->options(\App\Models\Unit::pluck('city', 'id')) 
+                            ->options(Unit::pluck('city', 'id')) 
                             ->multiple()
                             ->searchable()
                             ->placeholder('Todas as unidades'),
-                            
                     ])->columns(3),
             ]);
     }
@@ -122,6 +120,7 @@ class AttendanceReports extends Page implements HasTable
             AppointmentsPerDayChart::class,
             AppointmentsByTypeChart::class,
             AppointmentsByAgreementChart::class,
+            AppointmentsByUnitChart::class,
         ];
     }
 
@@ -137,7 +136,6 @@ class AttendanceReports extends Page implements HasTable
         ];
     }
 
-    // A TABELA
     public function table(Table $table): Table
     {
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';
@@ -199,10 +197,10 @@ class AttendanceReports extends Page implements HasTable
                     
                     Select::make('ano')
                         ->label('Ano de Referência')
-                        ->options([
-                            '2025' => '2025', 
+                        ->options([ 
                             '2026' => '2026', 
-                            '2027' => '2027'
+                            '2027' => '2027',
+                            '2028' => '2028'
                         ])
                         ->default(date('Y'))
                         ->required(),
@@ -228,7 +226,7 @@ class AttendanceReports extends Page implements HasTable
 
                 $nomesUnidades = 'Todas as Unidades';
                 if (!empty($unidades)) {
-                    $nomesUnidades = \App\Models\Unit::whereIn('id', $unidades)->pluck('city')->join(', ');
+                    $nomesUnidades = Unit::whereIn('id', $unidades)->pluck('city')->join(', ');
                 }
 
                 $query = Appointment::query()
@@ -240,7 +238,6 @@ class AttendanceReports extends Page implements HasTable
 
                 $totalSessoes = (clone $query)->sum('session_number');
                 
-                // Pegamos as ESTATÍSTICAS
                 $isSqlite = DB::connection()->getDriverName() === 'sqlite';
                 $evolucaoDiaria = (clone $query)->select(
                     $isSqlite 
@@ -251,11 +248,8 @@ class AttendanceReports extends Page implements HasTable
                 ->groupBy('dia')
                 ->pluck('total', 'dia');
 
-                // 🌟 A NOVA LÓGICA DA MÉDIA DIÁRIA: 
-                // Conta exatamente quantos dias tiveram pelo menos 1 sessão registrada
                 $diasComAtendimento = $evolucaoDiaria->count(); 
                 
-                // Divide o total de sessões pelos dias com atendimento
                 $mediaDiaria = ($diasComAtendimento > 0) ? number_format($totalSessoes / $diasComAtendimento, 2, ',', '.') : '0,00';
 
                 $sessoesPorTerapia = (clone $query)
@@ -270,6 +264,13 @@ class AttendanceReports extends Page implements HasTable
                     ->select('agreements.name', DB::raw('SUM(appointments.session_number) as total'))
                     ->groupBy('agreements.name')
                     ->pluck('total', 'agreements.name');
+
+                $sessoesPorUnidade = (clone $query)
+                    ->join('patients', 'appointments.patient_id', '=', 'patients.id')
+                    ->join('units', 'patients.unit_id', '=', 'units.id')
+                    ->select('units.city', DB::raw('SUM(appointments.session_number) as total'))
+                    ->groupBy('units.city')
+                    ->pluck('total', 'units.city');
 
                 $resumo = (clone $query)
                     ->join('patients', 'appointments.patient_id', '=', 'patients.id')
@@ -295,6 +296,7 @@ class AttendanceReports extends Page implements HasTable
                     'mediaDiaria' => $mediaDiaria,
                     'sessoesPorTerapia' => $sessoesPorTerapia,
                     'sessoesPorConvenio' => $sessoesPorConvenio,
+                    'sessoesPorUnidade' => $sessoesPorUnidade,
                     'evolucaoDiaria' => $evolucaoDiaria,
                 ]);
 
