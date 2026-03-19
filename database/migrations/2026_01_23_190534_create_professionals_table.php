@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('cpf')->unique();
             $table->string('phone');
+            $table->string('email')->nullable();
             $table->date('birth_date');
             $table->string('register_number')->nullable();
             $table->foreignId('therapy_id');

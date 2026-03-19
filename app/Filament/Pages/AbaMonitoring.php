@@ -10,7 +10,7 @@ use App\Models\PatientService;
 use App\Models\ServiceType;
 use App\Models\Visit;
 use Filament\Pages\Page;
-use Filament\Resources\Components\Tab;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -28,8 +28,8 @@ class AbaMonitoring extends Page implements HasTable
     use InteractsWithTable;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-presentation-chart-line';
-    protected static string|UnitEnum|null $navigationGroup = 'Gerência';
-    protected static ?string $navigationLabel = 'Monitoramento ABA';
+    protected static string|UnitEnum|null $navigationGroup = 'Coordenação/Supervisão';
+    protected static ?string $navigationLabel = 'Cronograma de Coordenação';
     protected static ?string $title = 'Auditoria: Monitoramento ABA';
     protected static ?string $slug = 'aba-monitoring';
     protected string $view = 'filament.pages.aba-monitoring';

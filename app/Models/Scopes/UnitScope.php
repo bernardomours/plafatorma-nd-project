@@ -5,6 +5,7 @@ namespace App\Models\Scopes;
 use App\Models\Appointment;
 use App\Models\RequestedService;
 use App\Models\Schedule;
+use App\Models\PatientService;
 use App\Models\Professional; 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -17,45 +18,33 @@ class UnitScope implements Scope
     {
         $user = Auth::user();
 
-        // 1. Catraca VIP: Se não tiver usuário logado ou se for admin, libera tudo.
         if (! $user || $user->is_admin) {
             return;
         }
 
-        // 2. Descobre TODAS as unidades vinculadas ao usuário atual
         $userUnitIds = [];
 
-        // Se o usuário tem uma unidade direta vinculada na tabela users
         if ($user->unit_id) {
             $userUnitIds[] = $user->unit_id;
         } else {
-            // O Truque do E-mail: Busca no profissional ignorando bloqueios temporariamente
             $profissional = Professional::withoutGlobalScopes()
                                 ->with('units')
                                 ->where('email', $user->email)
                                 ->first();
             
             if ($profissional) {
-                // Pega todos os IDs das unidades em que esse profissional trabalha e transforma num array
                 $userUnitIds = $profissional->units->pluck('id')->toArray();
             }
         }
 
-        // Se mesmo assim não achar a unidade (ex: e-mail errado), bloqueia por segurança
         if (empty($userUnitIds)) {
             $builder->whereRaw('1 = 0');
             return;
         }
 
         $mossoroUnitId = 1;
-        $modelClass = get_class($model);
-        
-        // Verifica se a unidade 1 (Mossoró) está dentro do array de unidades do usuário logado
-        $isMossoro = in_array($mossoroUnitId, $userUnitIds);
-
-        // 3. Aplica a regra de filtragem
-        
-        // REGRA A: Modelos que puxam a unidade através da relação com o Paciente
+        $modelClass = get_class($model);   
+        $isMossoro = in_array($mossoroUnitId, $userUnitIds);        
         if (
             $modelClass === Appointment::class ||
             $modelClass === RequestedService::class ||
@@ -70,21 +59,16 @@ class UnitScope implements Scope
             });
         } 
         
-        // REGRA B: A NOVA REGRA DO PROFISSIONAL (Alinhada com a regra de Natal/Mossoró)
         elseif ($modelClass === Professional::class) {
             $builder->whereHas('units', function (Builder $query) use ($isMossoro, $mossoroUnitId) {
                 if ($isMossoro) {
-                    // Mossoró só vê profissionais de Mossoró
                     $query->where('units.id', $mossoroUnitId);
                 } else {
-                    // Regra VIP do Interior: Se não é de Mossoró, pode ver TODOS os profissionais 
-                    // de Natal, João Câmara e Santa Cruz (tudo que NÃO for Mossoró)
                     $query->where('units.id', '!=', $mossoroUnitId);
                 }
             });
         }
         
-        // REGRA C: Todos os outros modelos (Pacientes, Visitas, etc) que ainda possuem a coluna unit_id
         else {
             if ($isMossoro) {
                 $builder->where($model->getTable() . '.unit_id', $mossoroUnitId);
