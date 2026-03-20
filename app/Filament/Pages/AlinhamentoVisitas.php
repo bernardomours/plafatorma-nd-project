@@ -76,6 +76,26 @@ class AlinhamentoVisitas extends Page implements HasTable
                             ->orderByDesc('happened_at')
                             ->limit(1),
                     ])
+                    ->where(function ($query) {
+                // Traz se NÃO existir visita de coordenação
+                $query->whereNotExists(function ($subQuery) {
+                    $subQuery->select('id')
+                        ->from('visits')
+                        ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                        ->whereColumn('visits.service_type_id', 'patient_services.service_type_id')
+                        ->where('visits.type', VisitType::Coordination->value)
+                        ->where('visits.status', VisitStatus::Completed->value);
+                })
+                // OU traz se NÃO existir visita de supervisão
+                ->orWhereNotExists(function ($subQuery) {
+                    $subQuery->select('id')
+                        ->from('visits')
+                        ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                        ->whereColumn('visits.service_type_id', 'patient_services.service_type_id')
+                        ->where('visits.type', VisitType::Supervision->value)
+                        ->where('visits.status', VisitStatus::Completed->value);
+                });
+            })
             )
             ->columns([
                 TextColumn::make('patient.name')
