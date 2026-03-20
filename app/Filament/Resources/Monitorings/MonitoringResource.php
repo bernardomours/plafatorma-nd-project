@@ -11,7 +11,6 @@ use App\Models\Monitoring;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class MonitoringResource extends Resource
@@ -52,7 +51,6 @@ class MonitoringResource extends Resource
                             ->where('email', $user->email)
                             ->first();
 
-        // A CHAVE DE OURO: Adicionamos o ->value depois de role
         if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
             return false; 
         }

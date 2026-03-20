@@ -130,9 +130,8 @@ class AlinhamentoVisitas extends Page implements HasTable
             ->actions([
                 Action::make('registrar_coordenacao')
                     ->label('Coordenação')
-                    ->icon('heroicon-o-pencil-square') // Mudei o ícone para dar ideia de edição/adição
+                    ->icon('heroicon-o-pencil-square')
                     ->color('warning')
-                    // 👇 Preenche com a data que já existe no banco (ou a data de hoje, se for vazio)
                     ->fillForm(fn ($record) => [
                         'happened_at' => $record->ultima_coordenacao_data ?? now(),
                     ])
@@ -142,7 +141,6 @@ class AlinhamentoVisitas extends Page implements HasTable
                             ->required(),
                     ])
                     ->action(function (array $data, PatientService $record): void {
-                        // Busca a última visita de coordenação desse paciente nesse ambiente
                         $visit = Visit::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Coordination->value)
@@ -151,13 +149,11 @@ class AlinhamentoVisitas extends Page implements HasTable
                             ->first();
 
                         if ($visit) {
-                            // Se já existe, apenas atualiza a data e garante o profissional correto
                             $visit->update([
                                 'happened_at'     => $data['happened_at'],
                                 'professional_id' => $record->coordinator_id,
                             ]);
                         } else {
-                            // Se não existe, cria a primeira
                             Visit::create([
                                 'patient_id'      => $record->patient_id,
                                 'service_type_id' => $record->service_type_id,
@@ -174,7 +170,6 @@ class AlinhamentoVisitas extends Page implements HasTable
                     ->label('Supervisão')
                     ->icon('heroicon-o-pencil-square')
                     ->color('info')
-                    // 👇 Preenche com a data que já existe
                     ->fillForm(fn ($record) => [
                         'happened_at' => $record->ultima_supervisao_data ?? now(),
                     ])
@@ -184,7 +179,6 @@ class AlinhamentoVisitas extends Page implements HasTable
                             ->required(),
                     ])
                     ->action(function (array $data, PatientService $record): void {
-                        // Busca a última visita de supervisão
                         $visit = Visit::where('patient_id', $record->patient_id)
                             ->where('service_type_id', $record->service_type_id)
                             ->where('type', VisitType::Supervision->value)
@@ -193,13 +187,11 @@ class AlinhamentoVisitas extends Page implements HasTable
                             ->first();
 
                         if ($visit) {
-                            // Se já existe, atualiza
                             $visit->update([
                                 'happened_at'     => $data['happened_at'],
                                 'professional_id' => $record->supervisor_id,
                             ]);
                         } else {
-                            // Se não existe, cria
                             Visit::create([
                                 'patient_id'      => $record->patient_id,
                                 'service_type_id' => $record->service_type_id,

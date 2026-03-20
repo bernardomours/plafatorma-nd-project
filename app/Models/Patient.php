@@ -17,6 +17,8 @@ class Patient extends Model
     use SoftDeletes;
     use LogsActivity;
 
+    protected static $recordEvents = ['created', 'updated', 'restored'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -54,7 +56,7 @@ class Patient extends Model
     {
         return LogOptions::defaults()
             ->logOnly(['name', 'unit_id', 'agreement_id', 'status', 'birth_date', 'guardian_name', 'guardian_phone']) 
-            ->logOnlyDirty() 
+            ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->dontLogIfAttributesChangedOnly(['updated_at']);
     }

@@ -99,6 +99,7 @@ class RequestedServicesTable
                             );
                     })
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->defaultSort('month_year', 'desc')
             ->filtersTriggerAction(
                 fn ($action) => $action
                     ->button()

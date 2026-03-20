@@ -43,7 +43,6 @@ class ProfissionaisCaseload extends Page implements HasTable, HasForms
                             ->where('email', $user->email)
                             ->first();
 
-        // A CHAVE DE OURO: Adicionamos o ->value depois de role
         if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
             return false; 
         }
@@ -51,7 +50,6 @@ class ProfissionaisCaseload extends Page implements HasTable, HasForms
         return false;
     }
 
-    // INICIALIZA O FORMULÁRIO NA TELA
     public function mount(): void
     {
         if (method_exists($this, 'fillSchemas')) {
@@ -80,7 +78,6 @@ class ProfissionaisCaseload extends Page implements HasTable, HasForms
             ]);
     }
 
-    // A TABELA DE PACIENTES
     public function table(Table $table): Table
     {
         return $table

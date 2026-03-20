@@ -5,10 +5,14 @@ namespace App\Filament\Resources\Activities;
 use App\Filament\Resources\Activities\Pages\ManageActivities;
 use BackedEnum;
 use UnitEnum;
+use App\Models\Unit;
+use App\Models\Agreement;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class ActivityResource extends Resource
@@ -74,7 +78,7 @@ class ActivityResource extends Resource
                         'saída' => 'SAÍDA',
                         'retorno' => 'RETORNO',
                         'movimentação' => 'MOVIMENTAÇÃO',
-                        'restored' => 'RESTAURAÇÃO',
+                        'restored' => 'RETORNO',
                         default => mb_strtoupper($state),
                     })
                     ->color(fn (string $state): string => match ($state) {
@@ -141,15 +145,15 @@ class ActivityResource extends Resource
                         }
 
                         if ($evento === 'deleted') {
-                            return '🗑️ Registro excluído do sistema.';
+                            return 'Registro excluído do sistema.';
                         }
 
                         if ($evento === 'created') {
-                            return '✨ Cadastro realizado no sistema.';
+                            return 'Cadastro realizado no sistema.';
                         }
 
                         if ($evento === 'restored') {
-                            return '♻️ Registro restaurado (Retornou ao sistema).';
+                            return 'Cadastro disponível no sistema.';
                         }
                         
                         if ($evento === 'updated' && isset($props['attributes'])) {
@@ -158,15 +162,15 @@ class ActivityResource extends Resource
                                 $valorAntigo = $props['old'][$coluna] ?? 'vazio';
                                 
                                 if ($coluna === 'unit_id') {
-                                    $cidadeAntiga = \App\Models\Unit::find($valorAntigo)?->city ?? $valorAntigo;
-                                    $cidadeNova = \App\Models\Unit::find($valorNovo)?->city ?? $valorNovo;
+                                    $cidadeAntiga = Unit::find($valorAntigo)?->city ?? $valorAntigo;
+                                    $cidadeNova = Unit::find($valorNovo)?->city ?? $valorNovo;
                                     $mudancas[] = "Unidade: [{$cidadeAntiga}] ➔ [{$cidadeNova}]";
                                     continue;
                                 }
                                 
                                 if ($coluna === 'agreement_id') {
-                                    $convAntigo = \App\Models\Agreement::find($valorAntigo)?->name ?? $valorAntigo;
-                                    $convNovo = \App\Models\Agreement::find($valorNovo)?->name ?? $valorNovo;
+                                    $convAntigo = Agreement::find($valorAntigo)?->name ?? $valorAntigo;
+                                    $convNovo = Agreement::find($valorNovo)?->name ?? $valorNovo;
                                     $mudancas[] = "Convênio: [{$convAntigo}] ➔ [{$convNovo}]";
                                     continue;
                                 }
@@ -184,9 +188,24 @@ class ActivityResource extends Resource
                     ->label('Unidade que aconteceu')
                     ->visible(fn ($livewire) => $livewire->activeTab === 'entradas_saidas')
                     ->getStateUsing(function ($record) {
-                        if (class_basename($record->subject_type) === 'MovementHistory') {
+                        $modelo = class_basename($record->subject_type);
+                        if ($modelo === 'MovementHistory') {
                             return $record->subject?->moveable()->withTrashed()->first()?->unit?->city ?? '-';
                         }
+
+                        if ($modelo === 'Patient') {
+                            $paciente = $record->subject()->withTrashed()->first();
+                            
+                            if ($paciente && $paciente->unit) {
+                                return $paciente->unit->city;
+                            }
+                            
+                            $atributos = $record->properties['attributes'] ?? [];
+                            if (isset($atributos['unit_id'])) {
+                                return Unit::find($atributos['unit_id'])?->city ?? '-';
+                            }
+                        }
+
                         return '-';
                     }),
 
@@ -208,7 +227,42 @@ class ActivityResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                SelectFilter::make('tipo_acao')
+                    ->label('Filtrar por Ação')
+                    ->options([
+                        'entrada' => 'Entradas',
+                        'saida'   => 'Saídas',
+                        'retorno' => 'Retornos',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $valor = $data['value'] ?? null;
+                        if (! $valor) {
+                            return $query;
+                        }
+
+                        return $query->where(function (Builder $q) use ($valor) {
+                            
+                            if ($valor === 'entrada') {
+                                $q->where('event', 'created')
+                                  ->where('subject_type', 'not like', '%MovementHistory%');
+                            }
+
+                            if ($valor === 'saida') {
+                                $q->where('event', 'deleted')
+                                  ->orWhere(function ($sub) {
+                                      $sub->where('properties->attributes->action', 'Saída')
+                                          ->orWhere('properties->attributes->action', 'Saida');
+                                  });
+                            }
+
+                            if ($valor === 'retorno') {
+                                $q->where('event', 'restored')
+                                  ->orWhere(function ($sub) {
+                                      $sub->where('properties->attributes->action', 'Retorno');
+                                  });
+                            }
+                        });
+                    }),
             ])
             ->recordActions([
             ])

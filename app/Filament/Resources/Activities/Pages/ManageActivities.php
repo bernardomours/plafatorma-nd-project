@@ -34,14 +34,15 @@ class ManageActivities extends ManageRecords
             'entradas_saidas' => Tab::make('Entradas e Saídas')
                 ->icon('heroicon-m-arrows-right-left')
                 ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
-                    return $query
-                        ->where('subject_type', \App\Models\MovementHistory::class)
-                        ->orWhere(function ($q) {
-                            $q->whereIn('subject_type', [
-                                \App\Models\Patient::class,
-                                \App\Models\Professional::class
-                            ])->whereIn('event', ['created', 'deleted', 'restored']);
-                        });
+                    return $query->where(function (\Illuminate\Database\Eloquent\Builder $q) {
+                        $q->where('subject_type', \App\Models\MovementHistory::class)
+                          ->orWhere(function ($sub) {
+                              $sub->whereIn('subject_type', [
+                                  \App\Models\Patient::class,
+                                  \App\Models\Professional::class
+                              ])->whereIn('event', ['created', 'deleted', 'restored']);
+                          });
+                    });
                 }),
         ];
     }

@@ -50,11 +50,10 @@ class ListAppointments extends ListRecords
                     );
                 }),
                 
-            // O NOVO BOTÃO DE EXCEL / CSV
             Actions\Action::make('export_csv')
                 ->label('Exportar para Excel')
                 ->icon('heroicon-o-table-cells')
-                ->color('success') // Verdinho padrão Excel
+                ->color('success')
                 ->visible(fn (): bool => auth()->user()->is_admin)
                 ->action(function ($livewire) {
                     $atendimentos = $livewire->getFilteredTableQuery()->get();
@@ -75,7 +74,6 @@ class ListAppointments extends ListRecords
                             'Check-out'
                         ], $separador);
 
-                        // Preenche as linhas com os dados
                         foreach ($atendimentos as $atendimento) {
                             fputcsv($file, [
                                 $atendimento->patient->name ?? '-',
@@ -122,7 +120,7 @@ class ListAppointments extends ListRecords
                     $unidadeSelecionada = $data['unidade_relatorio']; 
                     
                     $file = fopen($filePath, 'r');
-                    fgetcsv($file, 0, ';'); // Pula o cabeçalho
+                    fgetcsv($file, 0, ';');
             
                     $importados = 0;
                     $numeroLinha = 1; 
@@ -140,10 +138,8 @@ class ListAppointments extends ListRecords
             
                         $motivosErroLinha = []; 
             
-                        // Captura o número da Guia (Coluna C - Índice 2 do CSV), sem bloquear se for vazio
                         $numeroGuia = trim($row[2] ?? '');
             
-                        // 1. Validação da Data
                         $appointmentDate = null;
                         try {
                             $appointmentDate = Carbon::createFromFormat('d/m/Y', trim($row[1]))->format('Y-m-d');
@@ -151,7 +147,6 @@ class ListAppointments extends ListRecords
                             $motivosErroLinha[] = "Data inválida ou em branco";
                         }
             
-                        // 2. Validação de Horários (AGORA ACEITANDO CHECK-OUT VAZIO)
                         $checkinBruto = trim($row[12] ?? '');
                         $checkoutBruto = trim($row[13] ?? '');
                         $checkIn = explode(' ', $checkinBruto)[1] ?? null;
@@ -159,7 +154,6 @@ class ListAppointments extends ListRecords
             
                         if (!$checkIn) $motivosErroLinha[] = "Check-in ausente";
             
-                        // 3. Mapeamento de Terapias
                         $procedimentoBruto = strtoupper(trim($row[16]));
                         $terapiaNome = 'INDEFINIDA';
                         $tipoAtendimentoNome = 'Clínica'; 
@@ -198,14 +192,12 @@ class ListAppointments extends ListRecords
                         $therapy = Therapy::firstOrCreate(['name' => $terapiaNome]);
                         $serviceType = ServiceType::firstOrCreate(['name' => $tipoAtendimentoNome]);
             
-                        // 4. Validação de Nomes (Convênio + Unidade + Match Parcial Inteligente)
                         $patientNameCsv = trim($row[6]);
                         $professionalNameCsv = trim($row[10]);
                         
                         $patientSlugCsv = \Illuminate\Support\Str::slug($patientNameCsv);
                         $professionalSlugCsv = \Illuminate\Support\Str::slug($professionalNameCsv);
             
-                        // FUNIL 1: PACIENTES (Filtra Unimed e Unidade)
                         $pacientesFiltrados = $todosPacientes->filter(function($p) use ($unidadeSelecionada) {
                             $nomeConvenio = $p->agreement->name ?? ''; 
                             $nomeUnidade = $p->unit->city ?? '';       
@@ -216,21 +208,18 @@ class ListAppointments extends ListRecords
                             return $ehUnimed && $ehUnidadeCorreta;
                         });
             
-                        // FUNIL 2: Lógica de Pontuação Máxima para PACIENTES
                         $melhorPaciente = null;
                         $maiorSimilaridadePaciente = 0;
             
                         foreach ($pacientesFiltrados as $p) {
                             $dbSlug = \Illuminate\Support\Str::slug($p->name);
                             
-                            // Se contém perfeitamente, nota 100 e para a busca
                             if (str_contains($dbSlug, $patientSlugCsv) || str_contains($patientSlugCsv, $dbSlug)) {
                                 $melhorPaciente = $p;
                                 $maiorSimilaridadePaciente = 100;
                                 break; 
                             }
                             
-                            // Avalia por porcentagem
                             $tamanho = min(strlen($dbSlug), strlen($patientSlugCsv));
                             if ($tamanho > 0) {
                                 similar_text(substr($dbSlug, 0, $tamanho), substr($patientSlugCsv, 0, $tamanho), $porcentagem);
@@ -266,7 +255,6 @@ class ListAppointments extends ListRecords
                         $professional = ($melhorProfissional && $maiorSimilaridadeProfissional >= 80) ? $melhorProfissional : null;
             
             
-                        // Verificação de Erros
                         if (!$patient) {
                             $motivosErroLinha[] = "Paciente '{$patientNameCsv}' (Unimed - {$unidadeSelecionada}) não encontrado";
                         }
@@ -279,12 +267,10 @@ class ListAppointments extends ListRecords
                             continue; 
                         }
             
-                        // 5. Salva no banco (Lógica de Guia Opcional)
                         $sessionNumber = isset($row[9]) ? (int) trim($row[9]) : 1; 
             
                         try {
                             if (!empty($numeroGuia)) {
-                                // Se tem guia, faz o updateOrCreate para evitar duplicidade
                                 Appointment::updateOrCreate(
                                     ['guide' => $numeroGuia], 
                                     [
@@ -299,7 +285,6 @@ class ListAppointments extends ListRecords
                                     ]
                                 );
                             } else {
-                                // Se NÃO tem guia, apenas cria o registro e deixa a guia nula
                                 Appointment::create([
                                     'guide'            => null, 
                                     'appointment_date' => $appointmentDate,
@@ -321,7 +306,6 @@ class ListAppointments extends ListRecords
             
                     fclose($file);
             
-                    // 6. Notificações
                     if (count($errosDetalhados) > 0) {
                         $aviso = "Importamos <strong>{$importados}</strong> atendimentos com sucesso.<br><br><strong>Erros encontrados:</strong><br>";
                         
