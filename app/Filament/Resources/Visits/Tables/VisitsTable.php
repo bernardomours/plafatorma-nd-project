@@ -39,6 +39,9 @@ class VisitsTable
                     ->sortable(),
                 BadgeColumn::make('type')
                     ->label('Tipo'),
+                BadgeColumn::make('serviceType.name')
+                    ->label('Ambiente')
+                    ->color('warning'),
                 BadgeColumn::make('status')
                     ->label('Status'),
                 TextColumn::make('created_at')
