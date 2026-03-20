@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Enums\VisitStatus;
 use App\Enums\VisitType;
 use App\Models\Patient;
+use App\Models\Professional;
 use App\Models\Visit;
 use App\Models\PatientService;
 use Filament\Forms\Components\DatePicker;
@@ -13,7 +14,10 @@ use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use App\Filament\Resources\Patients\PatientResource;
 use Filament\Tables\Table;
+
+
 use UnitEnum;
 use BackedEnum;
 
@@ -40,7 +44,7 @@ class AlinhamentoVisitas extends Page implements HasTable
                             if ($user->unit_id) {
                                 $userUnitIds[] = $user->unit_id;
                             } else {
-                                $profissional = \App\Models\Professional::withoutGlobalScopes()
+                                $profissional = Professional::withoutGlobalScopes()
                                     ->with('units')
                                     ->where('email', $user->email)
                                     ->first();
@@ -77,7 +81,6 @@ class AlinhamentoVisitas extends Page implements HasTable
                             ->limit(1),
                     ])
                     ->where(function ($query) {
-                // Traz se NÃO existir visita de coordenação
                 $query->whereNotExists(function ($subQuery) {
                     $subQuery->select('id')
                         ->from('visits')
@@ -86,7 +89,6 @@ class AlinhamentoVisitas extends Page implements HasTable
                         ->where('visits.type', VisitType::Coordination->value)
                         ->where('visits.status', VisitStatus::Completed->value);
                 })
-                // OU traz se NÃO existir visita de supervisão
                 ->orWhereNotExists(function ($subQuery) {
                     $subQuery->select('id')
                         ->from('visits')
@@ -110,7 +112,8 @@ class AlinhamentoVisitas extends Page implements HasTable
                         $coord = $record->coordinator ? $record->coordinator->name : 'Sem Coord.';
                         $sup = $record->supervisor ? $record->supervisor->name : 'Sem Sup.';
                         return "Coord: {$coord} | Sup: {$sup}";
-                    }),
+                    })
+                    ->color('white'),
 
                 TextColumn::make('ultima_coordenacao_data')
                     ->label('Últ. Coordenação')
@@ -127,46 +130,86 @@ class AlinhamentoVisitas extends Page implements HasTable
             ->actions([
                 Action::make('registrar_coordenacao')
                     ->label('Coordenação')
-                    ->icon('heroicon-o-plus-circle')
+                    ->icon('heroicon-o-pencil-square') // Mudei o ícone para dar ideia de edição/adição
                     ->color('warning')
+                    // 👇 Preenche com a data que já existe no banco (ou a data de hoje, se for vazio)
+                    ->fillForm(fn ($record) => [
+                        'happened_at' => $record->ultima_coordenacao_data ?? now(),
+                    ])
                     ->form([
                         DatePicker::make('happened_at')
                             ->label('Data da Coordenação')
-                            ->required()
-                            ->default(now()),
+                            ->required(),
                     ])
                     ->action(function (array $data, PatientService $record): void {
-                        Visit::create([
-                            'patient_id'      => $record->patient_id,
-                            'service_type_id' => $record->service_type_id,
-                            'professional_id' => $record->coordinator_id,
-                            'type'            => VisitType::Coordination->value,
-                            'status'          => VisitStatus::Completed->value,
-                            'happened_at'     => $data['happened_at'],
-                            'notes'           => 'Registro retroativo de alinhamento (Backfill).',
-                        ]);
+                        // Busca a última visita de coordenação desse paciente nesse ambiente
+                        $visit = Visit::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
+                            ->where('type', VisitType::Coordination->value)
+                            ->where('status', VisitStatus::Completed->value)
+                            ->orderByDesc('happened_at')
+                            ->first();
+
+                        if ($visit) {
+                            // Se já existe, apenas atualiza a data e garante o profissional correto
+                            $visit->update([
+                                'happened_at'     => $data['happened_at'],
+                                'professional_id' => $record->coordinator_id,
+                            ]);
+                        } else {
+                            // Se não existe, cria a primeira
+                            Visit::create([
+                                'patient_id'      => $record->patient_id,
+                                'service_type_id' => $record->service_type_id,
+                                'professional_id' => $record->coordinator_id,
+                                'type'            => VisitType::Coordination->value,
+                                'status'          => VisitStatus::Completed->value,
+                                'happened_at'     => $data['happened_at'],
+                                'notes'           => 'Registro retroativo de alinhamento (Backfill).',
+                            ]);
+                        }
                     }),
 
                 Action::make('registrar_supervisao')
                     ->label('Supervisão')
-                    ->icon('heroicon-o-plus-circle')
+                    ->icon('heroicon-o-pencil-square')
                     ->color('info')
+                    // 👇 Preenche com a data que já existe
+                    ->fillForm(fn ($record) => [
+                        'happened_at' => $record->ultima_supervisao_data ?? now(),
+                    ])
                     ->form([
                         DatePicker::make('happened_at')
                             ->label('Data da Supervisão')
-                            ->required()
-                            ->default(now()),
+                            ->required(),
                     ])
                     ->action(function (array $data, PatientService $record): void {
-                        Visit::create([
-                            'patient_id'      => $record->patient_id,
-                            'service_type_id' => $record->service_type_id,
-                            'professional_id' => $record->supervisor_id,
-                            'type'            => VisitType::Supervision->value,
-                            'status'          => VisitStatus::Completed->value,
-                            'happened_at'     => $data['happened_at'],
-                            'notes'           => 'Registro retroativo de alinhamento (Backfill).',
-                        ]);
+                        // Busca a última visita de supervisão
+                        $visit = Visit::where('patient_id', $record->patient_id)
+                            ->where('service_type_id', $record->service_type_id)
+                            ->where('type', VisitType::Supervision->value)
+                            ->where('status', VisitStatus::Completed->value)
+                            ->orderByDesc('happened_at')
+                            ->first();
+
+                        if ($visit) {
+                            // Se já existe, atualiza
+                            $visit->update([
+                                'happened_at'     => $data['happened_at'],
+                                'professional_id' => $record->supervisor_id,
+                            ]);
+                        } else {
+                            // Se não existe, cria
+                            Visit::create([
+                                'patient_id'      => $record->patient_id,
+                                'service_type_id' => $record->service_type_id,
+                                'professional_id' => $record->supervisor_id,
+                                'type'            => VisitType::Supervision->value,
+                                'status'          => VisitStatus::Completed->value,
+                                'happened_at'     => $data['happened_at'],
+                                'notes'           => 'Registro retroativo de alinhamento (Backfill).',
+                            ]);
+                        }
                     })
             ]);
     }
