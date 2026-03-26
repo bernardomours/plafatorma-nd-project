@@ -53,7 +53,6 @@ class AbaMonitoring extends Page implements HasTable
                             ->where('email', $user->email)
                             ->first();
 
-        // A CHAVE DE OURO: Adicionamos o ->value depois de role
         if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
             return false; 
         }

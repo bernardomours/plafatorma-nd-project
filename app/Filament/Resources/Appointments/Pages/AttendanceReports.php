@@ -164,10 +164,24 @@ class AttendanceReports extends Page implements HasTable
                     ->orderBy('patients.name', 'asc')
             )
             ->columns([
-                TextColumn::make('reference_month')->label('MÊS')->sortable(),
-                TextColumn::make('patient_name')->label('PACIENTE')->searchable(),
-                TextColumn::make('therapy_name')->label('TERAPIA')->searchable(),
-                TextColumn::make('total_sessions')->label('TOTAL DE SESSÕES')->sortable(),
+                TextColumn::make('reference_month')
+                    ->label('MÊS')
+                    ->sortable(),
+                TextColumn::make('patient_name')
+                    ->label('PACIENTE')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('patients.name', 'like', "%{$search}%");
+                    })
+                    ->searchable(),
+                TextColumn::make('therapy_name')
+                    ->label('TERAPIA')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('therapies.name', 'like', "%{$search}%");
+                    })
+                    ->searchable(),
+                TextColumn::make('total_sessions')
+                    ->label('TOTAL DE SESSÕES')
+                    ->sortable(),
             ]);
     }
 

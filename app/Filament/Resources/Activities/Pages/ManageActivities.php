@@ -16,7 +16,6 @@ class ManageActivities extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            // Botão de criar removido
         ];
     }
 
