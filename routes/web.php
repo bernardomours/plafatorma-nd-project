@@ -63,6 +63,20 @@ Route::get('/disparar-aniversarios', function () {
     return 'E-mails de aniversário enviados com sucesso!';
 });
 
+Route::get('/migrar-terapias', function () {
+    $profissionais = Professional::whereNotNull('therapy_id')->get();
+    $atualizados = 0;
+
+    foreach ($profissionais as $profissional) {
+        if (!$profissional->therapies()->where('therapy_id', $profissional->therapy_id)->exists()) {
+            $profissional->therapies()->attach($profissional->therapy_id);
+            $atualizados++;
+        }
+    }
+
+    return "<h1>Migração concluída com sucesso! 🎉</h1> <p>{$atualizados} profissionais foram transferidos para a nova estrutura de terapias.</p>";
+});
+
 Route::get('/sync-ambientes', function () {
     $output = "Iniciando a Máquina do Tempo de Ambientes... 🕰️<br><br>";
 

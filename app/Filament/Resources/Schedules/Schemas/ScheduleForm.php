@@ -36,17 +36,17 @@ class ScheduleForm
                 ->required(),
             Select::make('professional_id')
                 ->label('Profissional')
-                ->options(Professional::all()->pluck('name', 'id')) // Changed from relationship()
+                ->options(Professional::all()->pluck('name', 'id'))
                 ->searchable()
                 ->required(),
             Select::make('therapy_id')
                 ->label('Terapia')
-                ->options(Therapy::all()->pluck('name', 'id')) // Changed from relationship()
+                ->options(Therapy::all()->pluck('name', 'id'))
                 ->searchable()
                 ->required(),
             Select::make('service_type_id')
                 ->label('Tipo de Atendimento')
-                ->options(ServiceType::all()->pluck('name', 'id')) // Changed from relationship()
+                ->options(ServiceType::all()->pluck('name', 'id'))
                 ->searchable()
                 ->required(),
         ];
