@@ -54,14 +54,14 @@ class Professional extends Model
         return $this->hasMany(Appointment::class);
     }
 
-        public function units(): BelongsToMany
+    public function units(): BelongsToMany
     {
         return $this->belongsToMany(Unit::class);
     }
 
-    public function therapy(): BelongsTo
+    public function therapies()
     {
-        return $this->belongsTo(Therapy::class);
+        return $this->belongsToMany(Therapy::class);
     }
 
     public function movementHistories()

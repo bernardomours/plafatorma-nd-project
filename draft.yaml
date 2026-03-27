@@ -48,7 +48,7 @@ models:
     check_in: time nullable   # Check-in
     check_out: time nullable  # Check-out
     service_type: string      # Tipo de Atendimento
-    session_number: integer nullable # Sessões (Contagem)
+    session_number: integer nullable # Sessões
     relationships:
       belongsTo: Patient, Professional, Therapy, Unit
 

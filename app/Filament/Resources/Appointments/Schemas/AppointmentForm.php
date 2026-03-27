@@ -8,8 +8,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\ToggleButtons; // 🌟 NOVO IMPORT AQUI
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class AppointmentForm
 {
@@ -136,15 +137,14 @@ class AppointmentForm
                     ->relationship(
                         name: 'professional', 
                         titleAttribute: 'name',
-                        modifyQueryUsing: function (\Illuminate\Database\Eloquent\Builder $query, callable $get) {
+                        modifyQueryUsing: function (Builder $query, callable $get) {
                             $query->withTrashed();
-
-                            // 🌟 Pega a terapia selecionada acima
                             $therapyId = $get('therapy_id');
 
-                            // Se ela escolheu uma terapia, filtra a coluna direto!
                             if ($therapyId) {
-                                $query->where('therapy_id', $therapyId); 
+                                $query->whereHas('therapies', function ($subQuery) use ($therapyId) {
+                                    $subQuery->where('therapies.id', $therapyId);
+                                });
                             }
 
                             return $query;

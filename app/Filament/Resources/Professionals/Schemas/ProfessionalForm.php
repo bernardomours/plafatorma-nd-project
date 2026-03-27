@@ -45,10 +45,12 @@ class ProfessionalForm
                     ->default('therapist')
                     ->required()
                     ->native(false),
-                Select::make('therapy_id')
-                    ->label('Especialidade')
-                    ->relationship('therapy', 'name')
-                    ->required(),
+                Select::make('therapies')
+                    ->label('Especialidade(s)')
+                    ->relationship('therapies', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->searchable(),
                 Select::make('units')
                     ->label('Unidades')
                     ->preload()

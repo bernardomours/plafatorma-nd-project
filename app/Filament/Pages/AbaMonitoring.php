@@ -35,6 +35,7 @@ class AbaMonitoring extends Page implements HasTable
     protected static ?string $title = 'Auditoria: Monitoramento ABA';
     protected static ?string $slug = 'aba-monitoring';
     protected string $view = 'filament.pages.aba-monitoring';
+    protected static ?int $navigationSort = 2;
 
     // public static function canAccess(): bool
     // {

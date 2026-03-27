@@ -22,7 +22,7 @@ class UnitResource extends Resource
     protected static ?string $pluralModelLabel = 'Unidades';
     protected static ?string $navigationLabel = 'Unidades';
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office';
-    protected static string|UnitEnum|null $navigationGroup = 'Gerência';
+    protected static string|UnitEnum|null $navigationGroup = 'Serviços';
 
 
     public static function form(Schema $schema): Schema

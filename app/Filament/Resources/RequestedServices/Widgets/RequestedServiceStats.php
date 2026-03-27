@@ -23,11 +23,11 @@ class RequestedServiceStats extends BaseWidget
         $query = $this->getPageTableQuery();
 
         return [
-            Stat::make('Horas Solicitadas', $query->clone()->sum('requested_hours'))
+            Stat::make('Horas Solicitadas', number_format($query->clone()->sum('requested_hours'), 0, ',', '.'))
                 ->description('Total das horas solicitadas')
                 ->descriptionIcon('heroicon-m-question-mark-circle')
                 ->color('warning'),
-            Stat::make('Horas Autorizadas', $query->clone()->sum('approved_hours'))
+            Stat::make('Horas Autorizadas', number_format($query->clone()->sum('approved_hours'), 0, ',', '.'))
                 ->description('Total das horas autorizadas')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),

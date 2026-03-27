@@ -34,13 +34,10 @@ class PatientForm
                     ->label('Carteira')
                     ->required(),
                 TextInput::make('guardian_name')
-                    ->label('Nome do Responsável')
-                    ->helperText('Caso não possua esse dado, pode deixar em branco'),
+                    ->label('Nome do Responsável'),
                 TextInput::make('guardian_phone')
                     ->label('Contato do Responsável')
-                    ->helperText('Caso não possua esse dado, pode deixar em branco')
                     ->tel(),
-                    
                 Select::make('unit_id')
                     ->label('Unidade')
                     ->relationship('unit', 'city')

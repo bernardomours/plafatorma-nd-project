@@ -24,6 +24,7 @@ class VisitResource extends Resource
     protected static ?string $modelLabel = 'Acompanhamento';
     protected static ?string $pluralModelLabel = 'Acompanhamentos';
     protected static ?string $navigationLabel = 'Acompanhamentos';
+    protected static ?int $navigationSort = 1;
 
     protected static string|UnitEnum|null $navigationGroup = 'Coordenação/Supervisão';
 

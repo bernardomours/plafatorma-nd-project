@@ -29,8 +29,13 @@ class AlinhamentoVisitas extends Page implements HasTable
     protected static ?string $navigationLabel = 'Alinhamento de Visitas';
     protected static ?string $title = 'Preenchimento Retroativo';
     protected static string|UnitEnum|null $navigationGroup = 'Coordenação/Supervisão';
-    
+    protected static ?int $navigationSort = 3;
     protected string $view = 'filament.pages.alinhamento-visitas';
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->is_admin ?? false;
+    }
 
     public function table(Table $table): Table
     {

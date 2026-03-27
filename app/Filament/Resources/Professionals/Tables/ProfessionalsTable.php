@@ -54,7 +54,6 @@ class ProfessionalsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable()
                     ->formatStateUsing(function ($state): string {
-                        // Se for um objeto Enum, pega o valor em texto dele. Se já for texto, usa normal.
                         $valor = $state instanceof \BackedEnum ? $state->value : $state;
                         
                         return match ($valor) {
@@ -64,10 +63,11 @@ class ProfessionalsTable
                             default       => (string) $valor,
                         };
                     }),
-                TextColumn::make('therapy.name')
-                    ->label('Especialidade')
+                TextColumn::make('therapies.name')
+                    ->label('Especialidade(s)')
+                    ->badge()
                     ->searchable(),
-                TextColumn::make('units.city') // Coloque no plural!
+                TextColumn::make('units.city')
                     ->badge()
                     ->label('Unidade')
                     ->searchable(),    
@@ -99,10 +99,10 @@ class ProfessionalsTable
                     ->relationship('units', 'city')
                     ->preload()
                     ->multiple(),
-                SelectFilter::make('therapy')
-                    ->relationship('therapy', 'name')
-                    ->multiple()
-                    ->label('Especialidade'),
+                SelectFilter::make('therapies')
+                    ->relationship('therapies', 'name')
+                    ->label('Filtrar por Terapia')
+                    ->multiple(),
                 SelectFilter::make('role')
                     ->options([
                         'therapist'   => 'AT',
