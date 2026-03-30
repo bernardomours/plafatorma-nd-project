@@ -35,8 +35,8 @@
                                         <div>
                                             <p class="font-bold text-blue-800 text-sm">{{ \Carbon\Carbon::parse($schedule->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($schedule->end_time)->format('H:i') }}</p>
                                             <p class="font-bold text-gray-700 mt-1">{{ $schedule->therapy?->name ?? 'N/A' }}</p>
-                                            <p class="text-sm text-gray-600">{{ ucfirst($schedule->type_therapy) }}</p>
-                                            <p class="text-sm text-gray-500">Prof. {{ $schedule->professional?->name ?? 'N/A' }}</p>
+                                            <p class="text-sm text-gray-600">{{ $schedule->serviceType?->name ?? 'Ambiente não definido' }}</p> 
+                                            <p class="text-sm text-gray-500">{{ $schedule->professional?->name ?? 'N/A' }}</p>
                                         </div>
 
                                         <div class="flex flex-col items-center space-y-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">

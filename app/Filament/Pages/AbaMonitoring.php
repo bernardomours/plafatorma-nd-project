@@ -50,7 +50,7 @@ class AbaMonitoring extends Page implements HasTable
             return true;
         }
 
-        $profissional = \App\Models\Professional::withoutGlobalScopes()
+        $profissional = Professional::withoutGlobalScopes()
                             ->where('email', $user->email)
                             ->first();
 
@@ -276,6 +276,138 @@ class AbaMonitoring extends Page implements HasTable
                             $q->where('coordinator_id', $data['value'])
                               ->orWhere('supervisor_id', $data['value']);
                         });
+                    }),
+
+                SelectFilter::make('status_coordenacao')
+                    ->label('Status Coordenação')
+                    ->options([
+                        'em_dia' => '✅ Em dia (0 dias)',
+                        'sem_coordenador' => '🚨 Sem coordenador cadastrado',
+                        'pendente' => '⚠️ Visita Pendente',
+                        'em_andamento' => '⏳ Em andamento (1 a 9 dias)',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) return $query;
+                        
+                        $type = VisitType::Coordination->value;
+                        $completedStatus = VisitStatus::Completed->value;
+                        $pendingStatus = VisitStatus::Pending->value;
+
+                        $daysCountSql = "(
+                            SELECT COUNT(DISTINCT DATE(appointment_date))
+                            FROM appointments
+                            WHERE appointments.patient_id = patient_services.patient_id
+                              AND appointments.service_type_id = patient_services.service_type_id
+                              AND appointments.appointment_date <= CURRENT_DATE
+                              AND appointments.therapy_id IN (SELECT id FROM therapies WHERE name = 'ABA')
+                              AND appointments.appointment_date > COALESCE((
+                                  SELECT happened_at FROM visits
+                                  WHERE visits.patient_id = patient_services.patient_id
+                                    AND (visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)
+                                    AND visits.type = '{$type}'
+                                    AND visits.status = '{$completedStatus}'
+                                  ORDER BY happened_at DESC LIMIT 1
+                              ), '2000-01-01')
+                        )";
+
+                        return match ($data['value']) {
+                            'sem_coordenador' => $query->whereNull('coordinator_id')->whereRaw("{$daysCountSql} > 0"),
+                            
+                            'pendente' => $query->whereHas('patient', function ($q) use ($type, $pendingStatus) {
+                                $q->whereExists(function ($sub) use ($type, $pendingStatus) {
+                                    $sub->select(DB::raw(1))
+                                        ->from('visits')
+                                        ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                        ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)')
+                                        ->where('type', $type)
+                                        ->where('status', $pendingStatus);
+                                });
+                            }),
+
+                            'em_dia' => $query->whereRaw("{$daysCountSql} = 0")
+                                              ->whereNotExists(function ($sub) use ($type, $pendingStatus) {
+                                                  $sub->select(DB::raw(1))->from('visits')
+                                                      ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                                      ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)')
+                                                      ->where('type', $type)->where('status', $pendingStatus);
+                                              }),
+
+                            'em_andamento' => $query->whereRaw("{$daysCountSql} > 0")
+                                                    ->whereRaw("{$daysCountSql} < 10")
+                                                    ->whereNotNull('coordinator_id')
+                                                    ->whereNotExists(function ($sub) use ($type, $pendingStatus) {
+                                                        $sub->select(DB::raw(1))->from('visits')
+                                                            ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                                            ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)')
+                                                            ->where('type', $type)->where('status', $pendingStatus);
+                                                    }),
+                            
+                            default => $query,
+                        };
+                    }),
+
+                SelectFilter::make('status_supervisao')
+                    ->label('Status Supervisão')
+                    ->options([
+                        'em_dia' => '✅ Em dia (0 dias)',
+                        'sem_supervisor' => '🚨 Sem supervisor cadastrado',
+                        'pendente' => '⚠️ Visita Pendente',
+                        'em_andamento' => '⏳ Em andamento (1 a 19 dias)',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['value'])) return $query;
+                        
+                        $type = VisitType::Supervision->value;
+                        $completedStatus = VisitStatus::Completed->value;
+                        $pendingStatus = VisitStatus::Pending->value;
+
+                        $daysCountSql = "(
+                            SELECT COUNT(DISTINCT DATE(appointment_date))
+                            FROM appointments
+                            WHERE appointments.patient_id = patient_services.patient_id
+                              AND appointments.service_type_id = patient_services.service_type_id
+                              AND appointments.appointment_date <= CURRENT_DATE
+                              AND appointments.therapy_id IN (SELECT id FROM therapies WHERE name = 'ABA')
+                              AND appointments.appointment_date > COALESCE((
+                                  SELECT happened_at FROM visits
+                                  WHERE visits.patient_id = patient_services.patient_id
+                                    AND (visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)
+                                    AND visits.type = '{$type}'
+                                    AND visits.status = '{$completedStatus}'
+                                  ORDER BY happened_at DESC LIMIT 1
+                              ), '2000-01-01')
+                        )";
+
+                        return match ($data['value']) {
+                            'sem_supervisor' => $query->whereNull('supervisor_id')->whereRaw("{$daysCountSql} > 0"),
+                            
+                            'pendente' => $query->whereExists(function ($sub) use ($type, $pendingStatus) {
+                                $sub->select(DB::raw(1))->from('visits')
+                                    ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                    ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)')
+                                    ->where('type', $type)->where('status', $pendingStatus);
+                            }),
+
+                            'em_dia' => $query->whereRaw("{$daysCountSql} = 0")
+                                              ->whereNotExists(function ($sub) use ($type, $pendingStatus) {
+                                                  $sub->select(DB::raw(1))->from('visits')
+                                                      ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                                      ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)')
+                                                      ->where('type', $type)->where('status', $pendingStatus);
+                                              }),
+
+                            'em_andamento' => $query->whereRaw("{$daysCountSql} > 0")
+                                                    ->whereRaw("{$daysCountSql} < 20")
+                                                    ->whereNotNull('supervisor_id')
+                                                    ->whereNotExists(function ($sub) use ($type, $pendingStatus) {
+                                                        $sub->select(DB::raw(1))->from('visits')
+                                                            ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                                            ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)')
+                                                            ->where('type', $type)->where('status', $pendingStatus);
+                                                    }),
+                            
+                            default => $query,
+                        };
                     }),
             ], layout: FiltersLayout::AboveContent);
     }

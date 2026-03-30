@@ -44,7 +44,6 @@ class UnitResource extends Resource
 
     public static function canViewAny(): bool
     {
-        // Verifica a coluna 'is_admin' que você criou na migration
         return auth()->user()?->is_admin ?? false;
     }
 

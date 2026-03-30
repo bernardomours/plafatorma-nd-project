@@ -48,7 +48,6 @@ class AdminPanelProvider extends PanelProvider
                 'Frequência',
                 'Coordenação/Supervisão',
                 'Ocupação',
-                'Gerência',
                 'Serviços',
                 'Administração',
             ])

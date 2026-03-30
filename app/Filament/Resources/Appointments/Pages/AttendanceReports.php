@@ -35,12 +35,22 @@ class AttendanceReports extends Page implements HasTable
     protected static ?string $title = 'Relatórios de Atendimento';
     protected string $view = 'filament.resources.appointments.pages.attendance-reports';
 
+    public static function shouldRegisterNavigation(array $parameters = []): bool
+    {
+        return auth()->user()?->is_admin ?? false;
+    }
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->is_admin ?? false;
+    }
+
     public ?string $mes = null;
     public ?string $ano = null;
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
     public ?array $unidades = [];
-    public ?string $agreement_id = null;
+    public ?string $agreement_id = null;   
 
     public function mount(): void
     {
