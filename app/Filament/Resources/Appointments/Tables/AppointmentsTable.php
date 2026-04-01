@@ -30,14 +30,8 @@ class AppointmentsTable
                     ->searchable(),
                 TextColumn::make('serviceType.name')
                     ->label('Tipo de Atendimento')
-                    ->searchable(),
-                TextColumn::make('session_number')
-                    ->label('Qtd de Sessões')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('professional.name')
-                    ->label('Profissional')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('check_in')
                     ->label('Check-in')
                     ->time()
@@ -46,6 +40,14 @@ class AppointmentsTable
                     ->label('Check-out')
                     ->time()
                     ->sortable(),
+                TextColumn::make('session_number')
+                    ->label('Qtd de Sessões')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('professional.name')
+                    ->label('Profissional')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Registrado em')
                     ->dateTime('d/m/Y H:i')
