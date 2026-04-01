@@ -12,6 +12,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
@@ -85,6 +86,13 @@ class PatientServices extends Page implements HasTable
                         $data['patient_id'] = $this->record->id;
                         return $data;
                     })
+                    ->form(RequestedServiceForm::getFormSchema()),
+            ])
+
+            ->recordActions([
+                EditAction::make()
+                    ->label('Editar')
+                    ->icon('heroicon-o-pencil')
                     ->form(RequestedServiceForm::getFormSchema()),
             ])
             ->emptyStateHeading('Nenhuma solicitação de carga horária encontrada para este paciente.');

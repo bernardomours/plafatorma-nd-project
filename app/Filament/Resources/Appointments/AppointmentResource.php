@@ -16,6 +16,7 @@ use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentResource extends Resource
 {
@@ -39,7 +40,7 @@ class AppointmentResource extends Resource
 
     public static function canViewAny(): bool
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if ($user?->is_admin) {
             return true;

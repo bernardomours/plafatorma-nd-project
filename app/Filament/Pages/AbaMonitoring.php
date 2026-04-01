@@ -21,8 +21,9 @@ use Illuminate\Support\Facades\DB;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use BackedEnum;
+use Carbon\Carbon;
 use UnitEnum;
 
 class AbaMonitoring extends Page implements HasTable
@@ -41,10 +42,9 @@ class AbaMonitoring extends Page implements HasTable
     // {
     //     return auth()->user()?->is_admin ?? false;
     // }
-
     public static function canViewAny(): bool
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         if ($user?->is_admin) {
             return true;
@@ -58,6 +58,7 @@ class AbaMonitoring extends Page implements HasTable
             return false; 
         }
         
+        return false;
     
     }
 
@@ -79,7 +80,28 @@ class AbaMonitoring extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(PatientService::query()->whereHas('patient')->with(['patient', 'serviceType', 'coordinator', 'supervisor']))
+            ->query( #essa query vÊ os pacientes que tem alguma visita ABA ou algum atendimento
+                PatientService::query()
+                    ->whereHas('patient')
+                    ->where(function ($query) {                      
+                        $query->whereExists(function ($subQuery) {
+                            $subQuery->select(DB::raw(1))
+                                  ->from('appointments')
+                                  ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
+                                  ->whereColumn('appointments.patient_id', 'patient_services.patient_id')
+                                  ->whereColumn('appointments.service_type_id', 'patient_services.service_type_id')
+                                  ->where('therapies.name', 'ABA');
+                        })
+                        ->orWhereExists(function ($subQuery) {
+                            $subQuery->select(DB::raw(1))
+                                  ->from('visits')
+                                  ->whereColumn('visits.patient_id', 'patient_services.patient_id')
+                                  ->whereRaw('(visits.service_type_id = patient_services.service_type_id OR visits.service_type_id IS NULL)');
+                        });
+                        
+                    })
+                    ->with(['patient', 'serviceType', 'coordinator', 'supervisor'])
+            )
             ->columns([
                 TextColumn::make('patient.name')
                     ->label('Paciente')
