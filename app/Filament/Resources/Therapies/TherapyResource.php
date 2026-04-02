@@ -47,7 +47,7 @@ class TherapyResource extends Resource
             Unit::all()->map(function (Unit $unit) {
                 return ToggleColumn::make('unit_' . $unit->id)
                     ->label($unit->city)
-                    ->disabled(fn () => ! auth()->user()->is_admin) #isso serve para caso o user nao seja admin, ele nao mexa
+                    ->disabled(fn () => ! auth()->user()->isAdmin() && ! auth()->user()->isManager()) #isso serve para caso o user nao seja admin, ele nao mexa
                     ->getStateUsing(fn ($record) => $record->units()->where('unit_id', $unit->id)->exists())
                     ->updateStateUsing(function ($record, $state) use ($unit) {
                         if ($state) {

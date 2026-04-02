@@ -40,7 +40,7 @@ class AgreementResource extends Resource
         $unitColumns = $units->map(function (Unit $unit) {
             return ToggleColumn::make('unit_' . $unit->id)
                 ->label($unit->city)
-                ->disabled(fn () => !auth()->user()->is_admin)
+                ->disabled(fn () => ! auth()->user()->isAdmin() && ! auth()->user()->isManager())                
                 ->getStateUsing(fn (Agreement $record) => $record->units->contains($unit->id))
                 ->updateStateUsing(function (Agreement $record, $state) use ($unit) {
                     if ($state) {

@@ -34,7 +34,8 @@ class AlinhamentoVisitas extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->is_admin ?? false;
+        $user = auth()->user();
+        return $user->isAdmin() || $user->isManager();
     }
 
     public function table(Table $table): Table

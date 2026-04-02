@@ -52,7 +52,9 @@ class PatientSchedule extends Page implements HasForms, HasActions
 
     public function getScheduleByDay($day)
     {
-        return $this->schedules->where('day_of_week', $day);
+        return $this->schedules
+            ->where('day_of_week', $day)
+            ->sortBy('start_time');
     }
 
     public function addScheduleAction(): Action

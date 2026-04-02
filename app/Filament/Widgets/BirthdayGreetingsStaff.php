@@ -16,41 +16,46 @@ class BirthdayGreetingsStaff extends TableWidget
     public function getTableRecords(): Collection
     {
         $user = auth()->user();
-        
-        // 1. Define a "Região" de quem está logado
         $unidadesPermitidas = [];
         if ($user->unit_id == 1) {
-            $unidadesPermitidas = [1]; // Mossoró vê apenas Mossoró
-        } else {
-            $unidadesPermitidas = [2, 3, 4]; // Região Natal vê Natal, JC e Santa Cruz
+            $unidadesPermitidas = [1];
+        } elseif ($user->unit_id) {
+            $unidadesPermitidas = [2, 3, 4];
         }
 
-        // 2. Busca Profissionais IGNORANDO o bloqueio padrão e aplicando a regra da região
-        $professionalsQuery = Professional::withoutGlobalScopes()
+        $professionalsQuery = Professional::query()
             ->with('units')
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day);
 
-        // Se NÃO for Admin, aplica o filtro da região
-        if (!$user->is_admin) {
-            $professionalsQuery->whereHas('units', function ($q) use ($unidadesPermitidas) {
-                $q->whereIn('units.id', $unidadesPermitidas);
-            });
+        if (!$user->isAdmin() && !$user->isManager()) {
+            if (!empty($unidadesPermitidas)) {
+                $professionalsQuery->whereHas('units', function ($q) use ($unidadesPermitidas) {
+                    $q->whereIn('units.id', $unidadesPermitidas);
+                });
+            } else {
+                $professionalsQuery->whereRaw('1 = 0'); 
+            }
         }
         $professionals = $professionalsQuery->get();
 
-        // 3. Busca Usuários da Equipe
         $usersQuery = User::with('unit')
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day);
 
-        // Se NÃO for Admin, aplica o filtro da região
-        if (!$user->is_admin) {
-            $usersQuery->whereIn('unit_id', $unidadesPermitidas);
+        if (!$user->isAdmin() && !$user->isManager()) {
+            if (!empty($unidadesPermitidas)) {
+                $usersQuery->whereIn('unit_id', $unidadesPermitidas);
+            } else {
+                $usersQuery->whereRaw('1 = 0');
+            }
         }
         $users = $usersQuery->get();
 
-        return $professionals->concat($users);
+        $all_professionals = $professionals->concat($users);
+        return $all_professionals->unique(function ($pessoa) {
+            return $pessoa->email ?: $pessoa->name;
+        })->values();
     }
 
     public function table(Table $table): Table
@@ -66,18 +71,15 @@ class BirthdayGreetingsStaff extends TableWidget
                     ->icon('heroicon-m-cake')
                     ->iconColor('primary'),
 
-                // 3. A Coluna Inteligente: Trata as diferenças de relações
                 TextColumn::make('unit_display')
                     ->label('Unidade')
                     ->badge()
                     ->color('info')
                     ->getStateUsing(function ($record) {
-                        // Se for um Profissional, pega a lista de unidades e transforma em Array
                         if ($record instanceof Professional) {
                             return $record->units->pluck('city')->toArray();
                         }
                         
-                        // Se for um User e tiver unidade vinculada, devolve num Array
                         if ($record instanceof User && $record->unit) {
                             return [$record->unit->city];
                         }

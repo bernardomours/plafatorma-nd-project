@@ -44,7 +44,8 @@ class RequestedServiceResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->is_admin ?? false;
+        $user = auth()->user();
+        return $user->isAdmin() || $user->isManager();
     }
 
     public static function getPages(): array

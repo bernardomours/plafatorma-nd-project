@@ -9,6 +9,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Get;
+use App\Rules\CpfValidate;
 
 class PatientForm
 {
@@ -25,11 +26,14 @@ class PatientForm
                 TextInput::make('cpf')
                     ->label('CPF')
                     ->required()
+                    ->mask('999.999.999-99')
+                    ->rule(new CpfValidate())
+                    ->maxLength(14)
                     ->unique(ignoreRecord: true)
                     ->validationMessages([
                         'unique' => 'Esse CPF já está cadastrado.'
                     ])
-                    ->helperText('Coloque apenas os dígitos'),
+                    ->helperText('Digite apenas os números, o sistema formata automaticamente.'),
                 TextInput::make('agreement_number')
                     ->label('Carteira')
                     ->required(),

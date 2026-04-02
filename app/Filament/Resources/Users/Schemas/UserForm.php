@@ -4,11 +4,9 @@ namespace App\Filament\Resources\Users\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
-
 
 class UserForm
 {
@@ -32,7 +30,7 @@ class UserForm
                 Select::make('unit_id')
                     ->label('Unidade')
                     ->relationship('unit', 'city') 
-                    ->placeholder('Acesso Global (Admin)')
+                    ->placeholder('Acesso Global')
                     ->searchable()
                     ->preload(),
                 
@@ -42,9 +40,18 @@ class UserForm
                     ->required(fn (string $context): bool => $context === 'create') 
                     ->dehydrated(fn ($state) => filled($state)),
 
-                Toggle::make('is_admin')
-                    ->label('Administrador')
-                    ->default(false),
+                Select::make('role')
+                    ->label('Nível de Acesso (Cargo)')
+                    ->options([
+                        'admin'          => 'Administrador',
+                        'manager'        => 'Gerência',
+                        'administrative' => 'Administrativo',
+                        'coordinator'    => 'Coordenador',
+                        'supervisor'     => 'Supervisor',
+                    ])
+                    ->default('administrative')
+                    ->required()
+                    ->native(false),
             ]);
     }
 }

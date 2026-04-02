@@ -27,7 +27,6 @@ class Professional extends Model
         'phone',
         'birth_date',
         'register_number',
-        'therapy_id',
         'email',
         'role',
         'deletion_reason',
@@ -44,7 +43,6 @@ class Professional extends Model
         return [
             'id' => 'integer',
             'birth_date' => 'date',
-            'therapy_id' => 'integer',
             'role' => ProfessionalRole::class,
         ];
     }

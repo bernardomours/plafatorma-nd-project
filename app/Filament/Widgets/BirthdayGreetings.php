@@ -21,10 +21,14 @@ class BirthdayGreetings extends TableWidget
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day);
 
-        if (!$user->is_admin) {
-            $query->whereIn('unit_id', $unidadesPermitidas);
+        if (!$user->isAdmin() && !$user->isManager()) {
+            
+            if ($user->unit_id) {
+                $query->whereIn('unit_id', $unidadesPermitidas);
+            } else {
+                $query->whereRaw('1 = 0'); 
+            }
         }
-
         return $table
             ->query($query)
             ->heading('Pacientes')

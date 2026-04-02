@@ -41,48 +41,23 @@ class VisitResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+        $user = auth()->user();
 
-        if (auth()->user()?->is_admin) {
+        if ($user->isAdmin() || $user->isManager()) {
             return $query;
         }
 
-        $user = auth()->user();
-        $unidadesPermitidas = [];
-        
-        if ($user->unit_id) {
-            $unidadesPermitidas[] = $user->unit_id;
-        }
-
-        $profissional = \App\Models\Professional::withoutGlobalScopes()
-                            ->with('units')
-                            ->where('email', $user->email)
-                            ->first();
-                            
-        if ($profissional && $profissional->units->isNotEmpty()) {
-            $idsDoProfissional = $profissional->units->pluck('id')->toArray();
-            $unidadesPermitidas = array_merge($unidadesPermitidas, $idsDoProfissional);
-        }
-        
-        $unidadesPermitidas = array_unique($unidadesPermitidas);
-        
-        if (empty($unidadesPermitidas)) {
+        $regionaisPermitidas = [];
+        if ($user->unit_id == 1) {
+            $regionaisPermitidas = [1];
+        } elseif ($user->unit_id) {
+            $regionaisPermitidas = [2, 3, 4];
+        } else {
             return $query->whereRaw('1 = 0'); 
         }
 
-        $regionaisPermitidas = [];
-        
-        if (in_array(1, $unidadesPermitidas)) { 
-            $regionaisPermitidas[] = 1;
-        } 
-        
-        if (array_intersect([2, 3, 4], $unidadesPermitidas)) {
-            array_push($regionaisPermitidas, 2, 3, 4);
-        }
-
-        return $query->whereIn('patient_id', function ($subquery) use ($regionaisPermitidas) {
-            $subquery->select('id')
-                     ->from('patients')
-                     ->whereIn('unit_id', $regionaisPermitidas);
+        return $query->whereHas('patient', function ($subquery) use ($regionaisPermitidas) {
+            $subquery->whereIn('unit_id', $regionaisPermitidas);
         });
     }
 

@@ -6,6 +6,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use App\Rules\CpfValidate;
 
 class ProfessionalForm
 {
@@ -18,11 +19,15 @@ class ProfessionalForm
                     ->required(),
                 TextInput::make('cpf')
                     ->label('CPF')
+                    ->required()
+                    ->mask('999.999.999-99')
+                    ->rule(new CpfValidate())
+                    ->maxLength(14)
                     ->unique(ignoreRecord: true)
                     ->validationMessages([
                         'unique' => 'Esse CPF já está cadastrado.'
                     ])
-                    ->required(),
+                    ->helperText('Digite apenas os números, o sistema formata automaticamente.'),
                 TextInput::make('phone')
                     ->label('Telefone')
                     ->placeholder('84999999999')

@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -23,8 +23,8 @@ class User extends Authenticatable
         'email',
         'password',
         'unit_id',
-        'is_admin',
         'birth_date',
+        'role',
     ];
 
     /**
@@ -37,11 +37,6 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public function unit(): BelongsTo
-    {
-        return $this->belongsTo(Unit::class);
-    }
-
     /**
      * Get the attributes that should be cast.
      *
@@ -52,6 +47,37 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birth_date' => 'date',
         ];
+    }
+
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
+    }
+
+    public function isAdministrative(): bool
+    {
+        return $this->role === 'administrative';
+    }
+
+    public function isCoordinator(): bool
+    {
+        return $this->role === 'coordinator';
+    }
+
+    public function isSupervisor(): bool
+    {
+        return $this->role === 'supervisor';
     }
 }

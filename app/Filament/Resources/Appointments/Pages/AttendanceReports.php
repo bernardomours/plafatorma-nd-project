@@ -37,12 +37,14 @@ class AttendanceReports extends Page implements HasTable
 
     public static function shouldRegisterNavigation(array $parameters = []): bool
     {
-        return auth()->user()?->is_admin ?? false;
+        $user = auth()->user();
+        return $user && ($user->isAdmin() || $user->isManager());
     }
 
     public static function canAccess(array $parameters = []): bool
     {
-        return auth()->user()?->is_admin ?? false;
+        $user = auth()->user();
+        return $user && ($user->isAdmin() || $user->isManager());
     }
 
     public ?string $mes = null;
@@ -148,11 +150,15 @@ class AttendanceReports extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        $user = auth()->user();
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';
 
         return $table
             ->query(
                 Appointment::query()
+                    ->when(!$user->isAdmin() && !$user->isManager() && $user->unit_id, function ($query) use ($user) {
+                        $query->whereHas('patient', fn($q) => $q->where('unit_id', $user->unit_id));
+                    })
                     ->join('patients', 'appointments.patient_id', '=', 'patients.id')
                     ->join('therapies', 'appointments.therapy_id', '=', 'therapies.id')
                     ->when($this->mes, fn($q) => $q->whereMonth('appointments.appointment_date', $this->mes))

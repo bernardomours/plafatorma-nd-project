@@ -39,7 +39,7 @@ class ActivityResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->id === 1;
+        return auth()->user()->isAdmin();
     }
 
     public static function table(Table $table): Table

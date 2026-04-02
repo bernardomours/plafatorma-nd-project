@@ -65,17 +65,25 @@ class PatientResource extends Resource
             ]);
     }
 
-    public static function getEloquentQuery(): Builder
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->isAdmin() || $user->isManager()) {
+            return $query;
+        }
+
+        if ($user->unit_id) {
+            $query->where('unit_id', $user->unit_id);
+        }
+
+        return $query;
     }
 
     public static function canViewAny(): bool
     {
-        return true; // Todo mundo vê!
+        return true;
     }
 
     public static function getPages(): array

@@ -34,20 +34,7 @@ class ProfissionaisCaseload extends Page implements HasTable, HasForms
     public static function canAccess(): bool
     {
         $user = auth()->user();
-
-        if ($user?->is_admin) {
-            return true;
-        }
-
-        $profissional = Professional::withoutGlobalScopes()
-                            ->where('email', $user->email)
-                            ->first();
-
-        if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
-            return false; 
-        }
-        
-        return false;
+        return $user->isAdmin() || $user->isManager() || $user->isAdministrative() || $user->isAdministrative();
     }
 
     public function mount(): void

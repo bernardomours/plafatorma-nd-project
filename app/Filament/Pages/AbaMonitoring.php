@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\DB;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use BackedEnum;
 use Carbon\Carbon;
 use UnitEnum;
@@ -38,28 +37,9 @@ class AbaMonitoring extends Page implements HasTable
     protected string $view = 'filament.pages.aba-monitoring';
     protected static ?int $navigationSort = 2;
 
-    // public static function canAccess(): bool
-    // {
-    //     return auth()->user()?->is_admin ?? false;
-    // }
     public static function canViewAny(): bool
     {
-        $user = Auth::user();
-
-        if ($user?->is_admin) {
-            return true;
-        }
-
-        $profissional = Professional::withoutGlobalScopes()
-                            ->where('email', $user->email)
-                            ->first();
-
-        if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
-            return false; 
-        }
-        
-        return false;
-    
+        return true; 
     }
 
     public function getTableTabs(): array
@@ -79,10 +59,16 @@ class AbaMonitoring extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        $user = auth()->user();
+        
         return $table
             ->query( #essa query vÊ os pacientes que tem alguma visita ABA ou algum atendimento
                 PatientService::query()
-                    ->whereHas('patient')
+                    ->whereHas('patient', function ($q) use ($user) {
+                        if (!$user->isAdmin() && !$user->isManager() && $user->unit_id) {
+                            $q->where('unit_id', $user->unit_id);
+                        }
+                    })
                     ->where(function ($query) {                      
                         $query->whereExists(function ($subQuery) {
                             $subQuery->select(DB::raw(1))

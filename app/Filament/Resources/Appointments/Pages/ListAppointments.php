@@ -36,7 +36,7 @@ class ListAppointments extends ListRecords
                 ->label('Exportar para PDF')
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('danger')
-                ->visible(fn (): bool => auth()->user()->is_admin)
+                ->visible(fn (): bool => auth()->user()->isAdmin() || auth()->user()->isManager())
                 ->action(function ($livewire) {
                     $atendimentos = $livewire->getFilteredTableQuery()->get();
 
@@ -54,7 +54,7 @@ class ListAppointments extends ListRecords
                 ->label('Exportar para Excel')
                 ->icon('heroicon-o-table-cells')
                 ->color('success')
-                ->visible(fn (): bool => auth()->user()->is_admin)
+                ->visible(fn (): bool => auth()->user()->isAdmin() || auth()->user()->isManager())
                 ->action(function ($livewire) {
                     $atendimentos = $livewire->getFilteredTableQuery()->get();
 
@@ -97,7 +97,7 @@ class ListAppointments extends ListRecords
                 ->label('Importar CSV Unimed')
                 ->icon('heroicon-o-document-arrow-up')
                 ->color('warning')
-                ->visible(fn (): bool => auth()->user()->is_admin)
+                ->visible(fn (): bool => auth()->user()->isAdmin())
                 ->form([
                     Select::make('unidade_relatorio')
                         ->label('Unidade do Relatório')

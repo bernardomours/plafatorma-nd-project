@@ -91,11 +91,6 @@ class Patient extends Model
         return $this->belongsTo(Professional::class, 'coordinator_id');
     }
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new \App\Models\Scopes\UnitScope());
-    }
-
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);

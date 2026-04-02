@@ -40,22 +40,8 @@ class AppointmentResource extends Resource
 
     public static function canViewAny(): bool
     {
-        $user = Auth::user();
-
-        if ($user?->is_admin) {
-            return true;
-        }
-
-        $profissional = Professional::withoutGlobalScopes()
-                            ->where('email', $user->email)
-                            ->first();
-
-        // A CHAVE DE OURO: Adicionamos o ->value depois de role
-        if ($profissional && in_array($profissional->role->value, ['coordinator', 'supervisor'])) {
-            return false; 
-        }
-        
-        return true;
+        $user = auth()->user();
+        return $user->isAdmin() || $user->isManager() || $user->isAdministrative();
     }
 
     public static function getRelations(): array
@@ -65,7 +51,6 @@ class AppointmentResource extends Resource
         ];
     }
 
-    // Restaurando o getPages para como era antes
     public static function getPages(): array
     {
         return [
