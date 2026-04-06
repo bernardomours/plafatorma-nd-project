@@ -38,7 +38,7 @@ class VisitResource extends Resource
         return VisitsTable::configure($table);
     }
 
-    public static function getEloquentQuery(): Builder
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = parent::getEloquentQuery();
         $user = auth()->user();
@@ -47,17 +47,18 @@ class VisitResource extends Resource
             return $query;
         }
 
-        $regionaisPermitidas = [];
+        $regioesPermitidas = [];
+        
         if ($user->unit_id == 1) {
-            $regionaisPermitidas = [1];
-        } elseif ($user->unit_id) {
-            $regionaisPermitidas = [2, 3, 4];
+            $regioesPermitidas = [1]; 
+        } elseif (in_array($user->unit_id, [2, 3, 4])) {
+            $regioesPermitidas = [2, 3, 4]; 
         } else {
             return $query->whereRaw('1 = 0'); 
         }
-
-        return $query->whereHas('patient', function ($subquery) use ($regionaisPermitidas) {
-            $subquery->whereIn('unit_id', $regionaisPermitidas);
+        
+        return $query->whereHas('patient', function ($q) use ($regioesPermitidas) {
+            $q->whereIn('unit_id', $regioesPermitidas);
         });
     }
 

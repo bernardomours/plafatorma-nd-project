@@ -65,7 +65,7 @@ class PatientResource extends Resource
             ]);
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
         $user = auth()->user();
@@ -74,11 +74,17 @@ class PatientResource extends Resource
             return $query;
         }
 
-        if ($user->unit_id) {
-            $query->where('unit_id', $user->unit_id);
+        $regioesPermitidas = [];
+        
+        if ($user->unit_id == 1) {
+            $regioesPermitidas = [1]; 
+        } elseif (in_array($user->unit_id, [2, 3, 4])) {
+            $regioesPermitidas = [2, 3, 4]; 
+        } else {
+            return $query->whereRaw('1 = 0'); 
         }
-
-        return $query;
+        
+        return $query->whereIn('unit_id', $regioesPermitidas);
     }
 
     public static function canViewAny(): bool

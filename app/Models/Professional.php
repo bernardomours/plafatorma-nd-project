@@ -67,36 +67,6 @@ class Professional extends Model
         return $this->morphMany(MovementHistory::class, 'moveable');
     }
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new \App\Models\Scopes\UnitScope);
-
-        static::saved(function ($professional) {
-            if (in_array($professional->role, ['supervisor', 'coordinator']) && $professional->email) {
-                
-                if (! $professional->user_id) {
-                    
-                    $cpfLimpo = preg_replace('/[^0-9]/', '', $professional->cpf);
-
-                    $user = \App\Models\User::firstOrCreate(
-                        ['email' => $professional->email],
-                        [
-                            'name' => $professional->name,
-                            'password' => bcrypt($cpfLimpo),
-                        ]
-                    );
-
-                    $professional->updateQuietly(['user_id' => $user->id]);
-                } 
-                else {
-                    $professional->user()->update([
-                        'name' => $professional->name,
-                        'email' => $professional->email,
-                    ]);
-                }
-            }
-        });
-    }
 
     public function getActivitylogOptions(): LogOptions
     {

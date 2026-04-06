@@ -41,10 +41,26 @@ class ProfessionalResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->isAdmin() || $user->isManager()) {
+            return $query;
+        }
+
+        $regioesPermitidas = [];
+        
+        if ($user->unit_id == 1) {
+            $regioesPermitidas = [1]; 
+        } elseif (in_array($user->unit_id, [2, 3, 4])) {
+            $regioesPermitidas = [2, 3, 4]; 
+        } else {
+            return $query->whereRaw('1 = 0'); 
+        }
+
+        return $query->whereHas('units', function ($q) use ($regioesPermitidas) {
+            $q->whereIn('unit_id', $regioesPermitidas);
+        });
     }
 
     public static function getRelations(): array

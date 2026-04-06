@@ -16,6 +16,7 @@ use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class AppointmentResource extends Resource
@@ -44,22 +45,28 @@ class AppointmentResource extends Resource
         return $user->isAdmin() || $user->isManager() || $user->isAdministrative();
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
         if ($user->isAdmin() || $user->isManager()) {
-            return $query; 
+            return $query;
         }
 
-        if ($user->unit_id) {
-            return $query->whereHas('patient', function ($q) use ($user) {
-                $q->where('unit_id', $user->unit_id);
-            });
+        $regioesPermitidas = [];
+        
+        if ($user->unit_id == 1) {
+            $regioesPermitidas = [1]; 
+        } elseif (in_array($user->unit_id, [2, 3, 4])) {
+            $regioesPermitidas = [2, 3, 4]; 
+        } else {
+            return $query->whereRaw('1 = 0'); 
         }
-
-        return $query->whereRaw('1 = 0');
+        
+        return $query->whereHas('patient', function ($q) use ($regioesPermitidas) {
+            $q->whereIn('unit_id', $regioesPermitidas);
+        });
     }
 
     public static function getRelations(): array
