@@ -27,9 +27,10 @@ class UserForm
                     ->email()
                     ->required(),
 
-                Select::make('unit_id')
-                    ->label('Unidade')
-                    ->relationship('unit', 'city') 
+                Select::make('units')
+                    ->label('Unidade(s)')
+                    ->relationship('units', 'city') 
+                    ->multiple()
                     ->placeholder('Acesso Global')
                     ->searchable()
                     ->preload(),

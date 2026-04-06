@@ -27,9 +27,10 @@ class UsersTable
                     ->label('E-mail')
                     ->searchable(),
                 
-                TextColumn::make('unit.city')
-                    ->label('Unidade')
-                    ->sortable(),
+                TextColumn::make('units.city')
+                    ->badge()
+                    ->label('Unidade(s)')
+                    ->searchable(), 
                 TextColumn::make('role')
                     ->label('Função')
                     ->badge()

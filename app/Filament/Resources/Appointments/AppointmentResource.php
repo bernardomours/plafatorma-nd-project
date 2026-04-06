@@ -54,13 +54,18 @@ class AppointmentResource extends Resource
             return $query;
         }
 
+        $userUnits = $user->units->pluck('id')->toArray(); 
         $regioesPermitidas = [];
         
-        if ($user->unit_id == 1) {
-            $regioesPermitidas = [1]; 
-        } elseif (in_array($user->unit_id, [2, 3, 4])) {
-            $regioesPermitidas = [2, 3, 4]; 
-        } else {
+        if (in_array(1, $userUnits)) {
+            $regioesPermitidas[] = 1; 
+        } 
+        
+        if (array_intersect([2, 3, 4], $userUnits)) {
+            array_push($regioesPermitidas, 2, 3, 4); 
+        }
+
+        if (empty($regioesPermitidas)) {
             return $query->whereRaw('1 = 0'); 
         }
         
