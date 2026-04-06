@@ -14,14 +14,6 @@ class Appointment extends Model
     use HasFactory;
 
     /**
-     * The "booted" method of the model.
-     */
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new UnitScope);
-    }
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array

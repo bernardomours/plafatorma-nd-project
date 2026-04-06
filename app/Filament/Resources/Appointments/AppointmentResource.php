@@ -44,6 +44,24 @@ class AppointmentResource extends Resource
         return $user->isAdmin() || $user->isManager() || $user->isAdministrative();
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->isAdmin() || $user->isManager()) {
+            return $query; 
+        }
+
+        if ($user->unit_id) {
+            return $query->whereHas('patient', function ($q) use ($user) {
+                $q->where('unit_id', $user->unit_id);
+            });
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -60,6 +78,8 @@ class AppointmentResource extends Resource
             'reports' => AttendanceReports::route('/reports'),
         ];
     }
+
+    
 
     public static function getNavigationItems(): array
     {
