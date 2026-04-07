@@ -30,7 +30,7 @@ class AbaMonitoring extends Page implements HasTable
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-presentation-chart-line';
     protected static string|UnitEnum|null $navigationGroup = 'Coordenação/Supervisão';
-    protected static ?string $navigationLabel = 'Cronograma de Terapias';
+    protected static ?string $navigationLabel = 'Cronograma de Terapias ABA/DENVER';
     protected static ?string $title = 'Auditoria: Monitoramento de Terapias Especiais';
     protected static ?string $slug = 'therapy-monitoring';
     protected string $view = 'filament.pages.aba-monitoring';

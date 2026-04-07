@@ -17,9 +17,35 @@ Route::get('/', function () {
 });
 
 Route::get('/recalculate-visits', function () {
-    $output = "Iniciando correção e recálculo de visitas (ABA e DENVER)...<br><br>";
-    
-    // 1. CRIA AS FICHAS FALTANTES (Resolve o problema do Alefe)
+    $output = "Iniciando modo de resgate e recálculo (ABA e DENVER)...<br><br>";
+
+    // 0. CARIMBA AS VISITAS DO PASSADO (A raiz do problema)
+    $output .= "<b>Passo 0: Carimbando visitas antigas sem terapia...</b><br>";
+    $visitasAntigas = \App\Models\Visit::whereNull('therapy_id')->get();
+    $abaTherapy = \App\Models\Therapy::where('name', 'ABA')->first();
+    $corrigidas = 0;
+
+    foreach($visitasAntigas as $visita) {
+        $dataReferencia = $visita->happened_at ?? $visita->created_at;
+        
+        // Tenta achar a consulta que gerou essa visita
+        $ultimaConsulta = \App\Models\Appointment::where('patient_id', $visita->patient_id)
+            ->whereHas('therapy', fn($q) => $q->whereIn('name', ['ABA', 'DENVER']))
+            ->where('appointment_date', '<=', $dataReferencia)
+            ->latest('appointment_date')
+            ->first();
+
+        // Se achar, usa a terapia da consulta. Se não achar, assume que era ABA (já que era o padrão da clínica antes)
+        $therapyIdToSet = $ultimaConsulta ? $ultimaConsulta->therapy_id : ($abaTherapy ? $abaTherapy->id : null);
+
+        if ($therapyIdToSet) {
+            $visita->update(['therapy_id' => $therapyIdToSet]);
+            $corrigidas++;
+        }
+    }
+    $output .= "- <span style='color:green;'>{$corrigidas} visitas do passado foram corrigidas!</span><br><br>";
+
+    // 1. CRIA AS FICHAS FALTANTES
     $output .= "<b>Passo 1: Sincronizando fichas de pacientes...</b><br>";
     $appointments = \App\Models\Appointment::whereHas('therapy', function($q) {
         $q->whereIn('name', ['ABA', 'DENVER']);
@@ -33,7 +59,8 @@ Route::get('/recalculate-visits', function () {
     }
     $output .= "- Fichas sincronizadas com sucesso!<br><br>";
 
-    // 2. RECÁLCULO NORMAL E INTELIGENTE
+    // 2. RECÁLCULO (Agora com as datas certas, ele vai apagar o que criou errado)
+    $output .= "<b>Passo 2: Recalculando os dias...</b><br>";
     $observer = new \App\Observers\AppointmentObserver();
     $patientServices = \App\Models\PatientService::with('patient', 'serviceType')->get();
     $terapias = \App\Models\Therapy::whereIn('name', ['ABA', 'DENVER'])->get()->keyBy('name');
@@ -41,9 +68,6 @@ Route::get('/recalculate-visits', function () {
     foreach ($patientServices as $service) {
         $patient = $service->patient;
         if (!$patient) continue;
-
-        $ambienteNome = $service->serviceType ? $service->serviceType->name : 'Desconhecido';
-        $output .= "<b>Verificando Paciente: {$patient->name} | Ambiente: {$ambienteNome}</b><br>";
 
         foreach (['ABA', 'DENVER'] as $therapyName) {
             if (!isset($terapias[$therapyName])) continue;
@@ -57,24 +81,19 @@ Route::get('/recalculate-visits', function () {
                 ->first();
 
             if ($validAppointment) {
-                $observer->created($validAppointment);
-                $output .= "- <span style='color:green;'>Recálculo de {$therapyName}: OK!</span><br>";
+                // Aqui o observer vai perceber que a visita antiga agora tem carimbo, vai contar os dias certinho e DELETAR a pendência errada!
+                $observer->created($validAppointment); 
             } else {
-                $deleted = \App\Models\Visit::where('patient_id', $patient->id)
+                \App\Models\Visit::where('patient_id', $patient->id)
                     ->where(fn($q) => $q->where('service_type_id', $service->service_type_id)->orWhereNull('service_type_id'))
                     ->where('status', \App\Enums\VisitStatus::Pending->value)
                     ->where('therapy_id', $therapyId) 
                     ->delete();
-
-                if ($deleted) {
-                    $output .= "- <span style='color:orange;'>⚠️ Limpeza: {$deleted} visita(s) órfã(s) de {$therapyName} apagada(s).</span><br>";
-                }
             }
         }
-        $output .= "<br>"; 
     }
 
-    $output .= "<b>✅ Tudo pronto! Pode olhar a tabela agora.</b>";
+    $output .= "<b>✅ Tudo pronto! Pode voltar para a tabela de Auditoria!</b>";
 
     return $output;
 });
