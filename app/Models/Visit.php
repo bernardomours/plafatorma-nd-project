@@ -27,6 +27,7 @@ class Visit extends Model
         'service_type_id',
         'status',
         'notes',
+        'therapy_id',
     ];
 
     /**
@@ -48,7 +49,7 @@ class Visit extends Model
         return $this->belongsTo(Patient::class)->withTrashed();
     }
     
-    public function serviceType(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function serviceType(): BelongsTo
     {
         return $this->belongsTo(ServiceType::class);
     }
@@ -56,6 +57,11 @@ class Visit extends Model
     public function professional(): BelongsTo
     {
         return $this->belongsTo(Professional::class)->withTrashed();
+    }
+
+    public function therapy()
+    {
+        return $this->belongsTo(Therapy::class);
     }
 
     public function getActivitylogOptions(): LogOptions

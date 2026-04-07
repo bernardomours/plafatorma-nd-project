@@ -19,74 +19,68 @@ class AppointmentObserver
 
     public function updated(Appointment $appointment): void
     {
-        // Se a data ou o ambiente da consulta mudarem, o robô recalcula
-        if ($appointment->isDirty('appointment_date') || $appointment->isDirty('service_type_id')) {
+        if ($appointment->isDirty('appointment_date') || $appointment->isDirty('service_type_id') || $appointment->isDirty('therapy_id')) {
             $this->checkAndCreateVisit($appointment);
         }
     }
 
-    /**
-     * Lógica central que dispara a verificação para cada tipo de visita.
-     */
     protected function checkAndCreateVisit(Appointment $appointment): void
     {
-        // 1. Garante que a terapia associada a este agendamento é ABA
-        if (!$appointment->therapy || $appointment->therapy->name !== 'ABA') {
+        if (!$appointment->therapy || !in_array($appointment->therapy->name, ['ABA', 'DENVER'])) {
             return;
         }
 
-        // 2. 🛡️ O GUARDA-COSTAS: Busca ou CRIA o vínculo do paciente com este ambiente
         $ambienteBusca = $appointment->service_type_id;
+        $therapyName = $appointment->therapy->name;
+        $therapyId = $appointment->therapy_id;
         
         if ($ambienteBusca) {
-            // Se a recepção salvou uma sessão Domiciliar, garante que o paciente tenha esse vínculo!
-            // Se não tiver, o robô cria uma linha fantasma no banco agora mesmo.
             $patientService = PatientService::firstOrCreate([
                 'patient_id' => $appointment->patient_id,
                 'service_type_id' => $ambienteBusca,
             ]);
         } else {
-            // Se veio sem ambiente do agendamento, tenta achar o principal
             $patientService = PatientService::where('patient_id', $appointment->patient_id)->first();
             if (!$patientService) {
-                return; // Se não achou nenhum, aborta.
+                return;
             }
         }
 
-        // Dispara a checagem para visita de COORDENAÇÃO
         $this->checkAndCreateVisitForType(
             $patientService,
             VisitType::Coordination,
-            10, // Limite de dias
-            $patientService->coordinator_id
+            10,
+            $patientService->coordinator_id,
+            $therapyId,
+            $therapyName
         );
 
-        // Dispara a checagem para visita de SUPERVISÃO
         $this->checkAndCreateVisitForType(
             $patientService,
             VisitType::Supervision,
-            20, // Limite de dias
-            $patientService->supervisor_id
+            20,
+            $patientService->supervisor_id,
+            $therapyId,
+            $therapyName
         );
     }
 
-    protected function checkAndCreateVisitForType(PatientService $patientService, VisitType $type, int $daysThreshold, ?int $professional_id): void
+    protected function checkAndCreateVisitForType(PatientService $patientService, VisitType $type, int $daysThreshold, ?int $professional_id, int $therapyId, string $therapyName): void
     {
-        // 1. Encontra a última visita CONCLUÍDA NESTE ambiente (ou nulo)
         $lastCompletedVisit = Visit::where('patient_id', $patientService->patient_id)
             ->where(fn($q) => $q->where('service_type_id', $patientService->service_type_id)->orWhereNull('service_type_id'))
             ->where('type', $type->value) 
             ->where('status', VisitStatus::Completed->value) 
+            ->where('therapy_id', $therapyId)
             ->latest('happened_at')
             ->first();
 
         $countStartDate = $lastCompletedVisit ? $lastCompletedVisit->happened_at : null;
 
-        // 2. Busca os agendamentos de ABA válidos e conta os dias
         $appointmentsQuery = Appointment::where('patient_id', $patientService->patient_id)
             ->where('service_type_id', $patientService->service_type_id)
             ->where('appointment_date', '<=', Carbon::today())
-            ->whereHas('therapy', fn ($query) => $query->where('name', 'ABA'));
+            ->where('therapy_id', $therapyId);
 
         if ($countStartDate) {
             $appointmentsQuery->where('appointment_date', '>', $countStartDate);
@@ -94,24 +88,24 @@ class AppointmentObserver
 
         $daysCount = $appointmentsQuery->select(DB::raw('DATE(appointment_date) as date'))->groupBy('date')->get()->count();
 
-        // 3. Verifica se JÁ EXISTE uma visita PENDENTE para este ciclo
         $visitaPendente = Visit::where('patient_id', $patientService->patient_id)
             ->where(fn($q) => $q->where('service_type_id', $patientService->service_type_id)->orWhereNull('service_type_id'))
             ->where('type', $type->value) 
             ->where('status', VisitStatus::Pending->value) 
-            ->first(); // Pega a primeira que achar
+            ->where('therapy_id', $therapyId)
+            ->first();
 
-        // 4. A LÓGICA DE DECISÃO (Criar, Manter ou Destruir)
         if ($daysCount >= $daysThreshold) {
             if (!$visitaPendente) {
                 Visit::create([
                     'patient_id'      => $patientService->patient_id,
                     'service_type_id' => $patientService->service_type_id,
-                    'professional_id' => $professional_id, // Pode ser null para gerar o alerta vermelho
+                    'professional_id' => $professional_id,
                     'type'            => $type->value,
                     'status'          => VisitStatus::Pending->value,
                     'happened_at'     => null,
-                    'notes'           => "Gerado automaticamente após atingir {$daysThreshold} dias de atendimento ABA neste ambiente.",
+                    'therapy_id'      => $therapyId,
+                    'notes'           => "Gerado automaticamente após atingir {$daysThreshold} dias de atendimento {$therapyName} neste ambiente.",
                 ]);
             }
         } else {

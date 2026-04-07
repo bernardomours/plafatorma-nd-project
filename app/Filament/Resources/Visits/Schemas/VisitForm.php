@@ -56,6 +56,13 @@ class VisitForm
                 ->relationship('serviceType', 'name')
                 ->required(),
 
+            Select::make('therapy_id')
+                ->label('Terapia (Referente à Visita)')
+                ->relationship('therapy', 'name', fn($query) => $query->whereIn('name', ['ABA', 'DENVER']))
+                ->searchable()
+                ->preload()
+                ->required(),
+
             Textarea::make('notes')
                 ->label('Observações')
                 ->columnSpanFull(),

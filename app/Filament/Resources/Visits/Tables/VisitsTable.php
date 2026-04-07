@@ -29,6 +29,15 @@ class VisitsTable
                     ->label('Paciente')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('therapy.name')
+                    ->label('Terapia')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'ABA' => 'info',
+                        'DENVER' => 'warning',
+                        default => 'gray',
+                    })
+                    ->sortable(),
                 TextColumn::make('professional.name')
                     ->label('Profissional')
                     ->searchable()

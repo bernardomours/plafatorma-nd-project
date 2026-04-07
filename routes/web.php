@@ -8,6 +8,7 @@ use App\Observers\AppointmentObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use App\Models\Appointment;
+use App\Models\Therapy;
 use App\Models\Visit;
 use App\Models\Professional;
 
@@ -16,9 +17,26 @@ Route::get('/', function () {
 });
 
 Route::get('/recalculate-visits', function () {
-    $observer = new AppointmentObserver();
-    $patientServices = PatientService::with('patient')->get();
-    $output = "Iniciando recálculo de visitas...<br><br>";
+    $output = "Iniciando correção e recálculo de visitas (ABA e DENVER)...<br><br>";
+    
+    // 1. CRIA AS FICHAS FALTANTES (Resolve o problema do Alefe)
+    $output .= "<b>Passo 1: Sincronizando fichas de pacientes...</b><br>";
+    $appointments = \App\Models\Appointment::whereHas('therapy', function($q) {
+        $q->whereIn('name', ['ABA', 'DENVER']);
+    })->whereNotNull('service_type_id')->get();
+
+    foreach ($appointments as $appt) {
+        \App\Models\PatientService::firstOrCreate([
+            'patient_id' => $appt->patient_id,
+            'service_type_id' => $appt->service_type_id,
+        ]);
+    }
+    $output .= "- Fichas sincronizadas com sucesso!<br><br>";
+
+    // 2. RECÁLCULO NORMAL E INTELIGENTE
+    $observer = new \App\Observers\AppointmentObserver();
+    $patientServices = \App\Models\PatientService::with('patient', 'serviceType')->get();
+    $terapias = \App\Models\Therapy::whereIn('name', ['ABA', 'DENVER'])->get()->keyBy('name');
 
     foreach ($patientServices as $service) {
         $patient = $service->patient;
@@ -27,31 +45,36 @@ Route::get('/recalculate-visits', function () {
         $ambienteNome = $service->serviceType ? $service->serviceType->name : 'Desconhecido';
         $output .= "<b>Verificando Paciente: {$patient->name} | Ambiente: {$ambienteNome}</b><br>";
 
-        $validAppointment = Appointment::where('patient_id', $patient->id)
-            ->where('service_type_id', $service->service_type_id)
-            ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'))
-            ->latest('appointment_date')
-            ->first();
+        foreach (['ABA', 'DENVER'] as $therapyName) {
+            if (!isset($terapias[$therapyName])) continue;
+            
+            $therapyId = $terapias[$therapyName]->id;
 
-        if ($validAppointment) {
-            $output .= "-> Acionando o observador para recalcular...<br>";
-            $observer->created($validAppointment);
-            $output .= "- <span style='color:green;'>Observer rodou com sucesso!</span><br><br>";
-        } else {
-            $deleted = Visit::where('patient_id', $patient->id)
-                ->where(fn($q) => $q->where('service_type_id', $service->service_type_id)->orWhereNull('service_type_id'))
-                ->where('status', VisitStatus::Pending->value)
-                ->delete();
+            $validAppointment = \App\Models\Appointment::where('patient_id', $patient->id)
+                ->where('service_type_id', $service->service_type_id)
+                ->where('therapy_id', $therapyId) 
+                ->latest('appointment_date')
+                ->first();
 
-            if ($deleted) {
-                $output .= "- <span style='color:orange;'>⚠️ Limpeza: {$deleted} visita(s) pendente(s) órfã(s) apagada(s) pois o ambiente ficou vazio.</span><br><br>";
+            if ($validAppointment) {
+                $observer->created($validAppointment);
+                $output .= "- <span style='color:green;'>Recálculo de {$therapyName}: OK!</span><br>";
             } else {
-                $output .= "- Resultado: Sem agendamentos e sem visitas órfãs. Tudo limpo.<br><br>";
+                $deleted = \App\Models\Visit::where('patient_id', $patient->id)
+                    ->where(fn($q) => $q->where('service_type_id', $service->service_type_id)->orWhereNull('service_type_id'))
+                    ->where('status', \App\Enums\VisitStatus::Pending->value)
+                    ->where('therapy_id', $therapyId) 
+                    ->delete();
+
+                if ($deleted) {
+                    $output .= "- <span style='color:orange;'>⚠️ Limpeza: {$deleted} visita(s) órfã(s) de {$therapyName} apagada(s).</span><br>";
+                }
             }
         }
+        $output .= "<br>"; 
     }
 
-    $output .= "<b>✅ Recálculo finalizado com sucesso!</b>";
+    $output .= "<b>✅ Tudo pronto! Pode olhar a tabela agora.</b>";
 
     return $output;
 });

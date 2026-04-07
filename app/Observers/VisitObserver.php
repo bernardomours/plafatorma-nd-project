@@ -10,46 +10,60 @@ use Illuminate\Support\Facades\DB;
 
 class VisitObserver
 {
-    /**
-     * Esse evento dispara toda vez que uma visita é CRIADA ou ATUALIZADA no banco.
-     */
+    // 1. O ESPIÃO DO "CRIANDO": Preenche a terapia automaticamente antes de salvar
+    public function creating(Visit $visit): void
+    {
+        if (empty($visit->therapy_id)) {
+            $ultimaConsulta = Appointment::where('patient_id', $visit->patient_id)
+                ->whereHas('therapy', function ($query) {
+                    $query->whereIn('name', ['ABA', 'DENVER']);
+                })
+                ->latest('appointment_date')
+                ->first();
+
+            if ($ultimaConsulta) {
+                $visit->therapy_id = $ultimaConsulta->therapy_id;
+            }
+        }
+    }
+
+    // 2. O ESPIÃO DO "SALVO": Verifica as metas após salvar
     public function saved(Visit $visit): void
     {
-        // 1. Só fazemos a checagem se a visita foi marcada como CONCLUÍDA e tem uma DATA preenchida.
-        // (Isso ignora as visitas que a sua chefe acabou de deixar como Pendentes e sem data)
         if ($visit->status === VisitStatus::Completed && !empty($visit->happened_at)) {
             
-            // 2. Conta os dias ÚNICOS de sessões ABA do paciente DEPOIS da data dessa visita que acabou de ser salva
-            $diasDeAba = Appointment::where('patient_id', $visit->patient_id)
+            // Agora filtramos pela terapia específica que foi descoberta no 'creating'
+            $diasDeTerapia = Appointment::where('patient_id', $visit->patient_id)
                 ->where('service_type_id', $visit->service_type_id)
-                ->whereHas('therapy', fn ($q) => $q->where('name', 'ABA'))
+                ->when($visit->therapy_id, function ($q) use ($visit) {
+                    // Busca os dias específicos do ABA ou do DENVER
+                    $q->where('therapy_id', $visit->therapy_id); 
+                })
                 ->whereDate('appointment_date', '>', $visit->happened_at)
                 ->select(DB::raw('DATE(appointment_date) as date'))
                 ->groupBy('date')
                 ->get()
                 ->count();
 
-            // 3. Regra de Coordenação (Meta: 10 dias)
-            if ($visit->type === VisitType::Coordination && $diasDeAba >= 10) {
+            // A lógica continua a mesma, mas agora a variável é dinâmica
+            if ($visit->type === VisitType::Coordination && $diasDeTerapia >= 10) {
                 $this->gerarVisitaPendente($visit, VisitType::Coordination);
             }
 
-            // 4. Regra de Supervisão (Meta: 20 dias)
-            if ($visit->type === VisitType::Supervision && $diasDeAba >= 20) {
+            if ($visit->type === VisitType::Supervision && $diasDeTerapia >= 20) {
                 $this->gerarVisitaPendente($visit, VisitType::Supervision);
             }
         }
     }
 
-    /**
-     * Função auxiliar para gerar a visita com segurança (sem duplicar)
-     */
+    // 3. GERADOR DE PENDÊNCIAS: Repassa a terapia para a nova visita
     private function gerarVisitaPendente(Visit $visit, $tipo): void
     {
         $jaTemPendente = Visit::where('patient_id', $visit->patient_id)
             ->where('service_type_id', $visit->service_type_id)
             ->where('type', $tipo)
             ->where('status', VisitStatus::Pending)
+            ->when($visit->therapy_id, fn($q) => $q->where('therapy_id', $visit->therapy_id)) // Impede duplicatas misturando terapias
             ->exists();
 
         if (!$jaTemPendente) {
@@ -59,6 +73,7 @@ class VisitObserver
                 'professional_id' => $visit->professional_id,
                 'type' => $tipo,
                 'status' => VisitStatus::Pending,
+                'therapy_id' => $visit->therapy_id, // 👈 A mágica continua: a pendente já nasce sabendo sua terapia!
             ]);
         }
     }
