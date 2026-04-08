@@ -96,7 +96,6 @@ Route::get('/recalculate-visits', function () {
 
     // Agrupa as visitas por: Paciente + Ambiente + Tipo + Terapia
     $grupos = $pendentes->groupBy(function($visit) {
-        // 👇 Colocamos o ->value depois do type para transformar o Enum em texto!
         return $visit->patient_id . '-' . $visit->service_type_id . '-' . $visit->type->value . '-' . $visit->therapy_id;
     });
 
