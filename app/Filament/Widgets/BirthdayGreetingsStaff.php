@@ -17,12 +17,14 @@ class BirthdayGreetingsStaff extends TableWidget
     {
         $user = auth()->user();
         $unidadesPermitidas = [];
+        
         if ($user->unit_id == 1) {
             $unidadesPermitidas = [1];
         } elseif ($user->unit_id) {
             $unidadesPermitidas = [2, 3, 4];
         }
 
+        // BUSCA DE PROFISSIONAIS
         $professionalsQuery = Professional::query()
             ->with('units')
             ->whereMonth('birth_date', now()->month)
@@ -39,19 +41,23 @@ class BirthdayGreetingsStaff extends TableWidget
         }
         $professionals = $professionalsQuery->get();
 
+        // BUSCA DE USUÁRIOS (Agora filtrando o plural 'units' corretamente)
         $usersQuery = User::with('units')
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day);
 
         if (!$user->isAdmin() && !$user->isManager()) {
             if (!empty($unidadesPermitidas)) {
-                $usersQuery->whereIn('unit_id', $unidadesPermitidas);
+                $usersQuery->whereHas('units', function ($q) use ($unidadesPermitidas) {
+                    $q->whereIn('units.id', $unidadesPermitidas);
+                });
             } else {
                 $usersQuery->whereRaw('1 = 0');
             }
         }
         $users = $usersQuery->get();
 
+        // JUNTA TODO MUNDO
         $all_professionals = $professionals->concat($users);
         return $all_professionals->unique(function ($pessoa) {
             return $pessoa->email ?: $pessoa->name;
@@ -76,12 +82,14 @@ class BirthdayGreetingsStaff extends TableWidget
                     ->badge()
                     ->color('info')
                     ->getStateUsing(function ($record) {
+                        // Profissionais
                         if ($record instanceof Professional) {
                             return $record->units->pluck('city')->toArray();
                         }
                         
-                        if ($record instanceof User && $record->unit) {
-                            return [$record->unit->city];
+                        // Usuários (Agora perfeitamente igual aos profissionais!)
+                        if ($record instanceof User) {
+                            return $record->units->pluck('city')->toArray();
                         }
                         
                         return null;
