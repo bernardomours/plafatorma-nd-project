@@ -19,7 +19,7 @@ Route::get('/', function () {
 Route::get('/recalculate-visits', function () {
     $output = "Iniciando modo de resgate e recálculo (ABA e DENVER)...<br><br>";
 
-    // 0. CARIMBA AS VISITAS DO PASSADO (A raiz do problema)
+    // 0. CARIMBA AS VISITAS DO PASSADO
     $output .= "<b>Passo 0: Carimbando visitas antigas sem terapia...</b><br>";
     $visitasAntigas = \App\Models\Visit::whereNull('therapy_id')->get();
     $abaTherapy = \App\Models\Therapy::where('name', 'ABA')->first();
@@ -28,14 +28,12 @@ Route::get('/recalculate-visits', function () {
     foreach($visitasAntigas as $visita) {
         $dataReferencia = $visita->happened_at ?? $visita->created_at;
         
-        // Tenta achar a consulta que gerou essa visita
         $ultimaConsulta = \App\Models\Appointment::where('patient_id', $visita->patient_id)
             ->whereHas('therapy', fn($q) => $q->whereIn('name', ['ABA', 'DENVER']))
             ->where('appointment_date', '<=', $dataReferencia)
             ->latest('appointment_date')
             ->first();
 
-        // Se achar, usa a terapia da consulta. Se não achar, assume que era ABA (já que era o padrão da clínica antes)
         $therapyIdToSet = $ultimaConsulta ? $ultimaConsulta->therapy_id : ($abaTherapy ? $abaTherapy->id : null);
 
         if ($therapyIdToSet) {
@@ -59,7 +57,7 @@ Route::get('/recalculate-visits', function () {
     }
     $output .= "- Fichas sincronizadas com sucesso!<br><br>";
 
-    // 2. RECÁLCULO (Agora com as datas certas, ele vai apagar o que criou errado)
+    // 2. RECÁLCULO
     $output .= "<b>Passo 2: Recalculando os dias...</b><br>";
     $observer = new \App\Observers\AppointmentObserver();
     $patientServices = \App\Models\PatientService::with('patient', 'serviceType')->get();
@@ -71,7 +69,6 @@ Route::get('/recalculate-visits', function () {
 
         foreach (['ABA', 'DENVER'] as $therapyName) {
             if (!isset($terapias[$therapyName])) continue;
-            
             $therapyId = $terapias[$therapyName]->id;
 
             $validAppointment = \App\Models\Appointment::where('patient_id', $patient->id)
@@ -81,7 +78,6 @@ Route::get('/recalculate-visits', function () {
                 ->first();
 
             if ($validAppointment) {
-                // Aqui o observer vai perceber que a visita antiga agora tem carimbo, vai contar os dias certinho e DELETAR a pendência errada!
                 $observer->created($validAppointment); 
             } else {
                 \App\Models\Visit::where('patient_id', $patient->id)
@@ -92,8 +88,31 @@ Route::get('/recalculate-visits', function () {
             }
         }
     }
+    $output .= "- Recálculo finalizado!<br><br>";
 
-    $output .= "<b>✅ Tudo pronto! Pode voltar para a tabela de Auditoria!</b>";
+    // 3. A GRANDE FAXINA DE DUPLICIDADES
+    $output .= "<b>Passo 3: Limpando visitas pendentes duplicadas (Aspirador de Pó)...</b><br>";
+    $pendentes = \App\Models\Visit::where('status', \App\Enums\VisitStatus::Pending->value)->get();
+
+    // Agrupa as visitas por: Paciente + Ambiente + Tipo + Terapia
+    $grupos = $pendentes->groupBy(function($visit) {
+        return $visit->patient_id . '-' . $visit->service_type_id . '-' . $visit->type . '-' . $visit->therapy_id;
+    });
+
+    $apagadas = 0;
+    foreach ($grupos as $chave => $grupo) {
+        if ($grupo->count() > 1) {
+            // Ordena da mais recente para a mais antiga, salva a 1ª e separa o resto para exclusão
+            $paraApagar = $grupo->sortByDesc('id')->slice(1);
+            foreach ($paraApagar as $visita) {
+                $visita->delete();
+                $apagadas++;
+            }
+        }
+    }
+    $output .= "- <span style='color:green;'>{$apagadas} visitas clonadas/duplicadas foram eliminadas!</span><br><br>";
+
+    $output .= "<b>✅ Faxina completa! Tabela limpinha.</b>";
 
     return $output;
 });

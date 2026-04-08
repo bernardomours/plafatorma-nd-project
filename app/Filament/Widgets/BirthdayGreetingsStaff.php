@@ -24,7 +24,6 @@ class BirthdayGreetingsStaff extends TableWidget
             $unidadesPermitidas = [2, 3, 4];
         }
 
-        // BUSCA DE PROFISSIONAIS
         $professionalsQuery = Professional::query()
             ->with('units')
             ->whereMonth('birth_date', now()->month)
@@ -41,7 +40,6 @@ class BirthdayGreetingsStaff extends TableWidget
         }
         $professionals = $professionalsQuery->get();
 
-        // BUSCA DE USUÁRIOS (Agora filtrando o plural 'units' corretamente)
         $usersQuery = User::with('units')
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day);
@@ -57,7 +55,6 @@ class BirthdayGreetingsStaff extends TableWidget
         }
         $users = $usersQuery->get();
 
-        // JUNTA TODO MUNDO
         $all_professionals = $professionals->concat($users);
         return $all_professionals->unique(function ($pessoa) {
             return $pessoa->email ?: $pessoa->name;
@@ -82,12 +79,10 @@ class BirthdayGreetingsStaff extends TableWidget
                     ->badge()
                     ->color('info')
                     ->getStateUsing(function ($record) {
-                        // Profissionais
                         if ($record instanceof Professional) {
                             return $record->units->pluck('city')->toArray();
                         }
                         
-                        // Usuários (Agora perfeitamente igual aos profissionais!)
                         if ($record instanceof User) {
                             return $record->units->pluck('city')->toArray();
                         }
