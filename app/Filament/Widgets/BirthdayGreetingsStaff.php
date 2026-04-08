@@ -39,7 +39,7 @@ class BirthdayGreetingsStaff extends TableWidget
         }
         $professionals = $professionalsQuery->get();
 
-        $usersQuery = User::with('unit')
+        $usersQuery = User::with('units')
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day);
 
