@@ -90,4 +90,10 @@ class ProfessionalSchedule extends Page implements HasForms
 
         return $agenda;
     }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        return $user->isAdmin() || $user->isManager() || $user->isAdministrative();
+    }
 }
