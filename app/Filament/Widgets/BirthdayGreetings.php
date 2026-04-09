@@ -19,7 +19,8 @@ class BirthdayGreetings extends TableWidget
 
         $query = Patient::withoutGlobalScopes()
             ->whereMonth('birth_date', now()->month)
-            ->whereDay('birth_date', now()->day);
+            ->whereDay('birth_date', now()->day)
+            ->where('status', 'Ativo');
 
         if (!$user->isAdmin() && !$user->isManager()) {
             
