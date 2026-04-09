@@ -17,7 +17,7 @@ class BirthdayGreetings extends TableWidget
         $user = auth()->user();
         $unidadesPermitidas = ($user->unit_id == 1) ? [1] : [2, 3, 4];
 
-        $query = Patient::withoutGlobalScopes()
+        $query = Patient::query()
             ->whereMonth('birth_date', now()->month)
             ->whereDay('birth_date', now()->day)
             ->where('ativo', true);
