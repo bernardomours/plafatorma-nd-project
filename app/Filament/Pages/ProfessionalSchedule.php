@@ -53,7 +53,6 @@ class ProfessionalSchedule extends Page implements HasForms
             'Tarde' => $vazio,
         ];
 
-        // Lê o ID selecionado de dentro do array
         $prof_id = $this->data['professional_id'] ?? null;
 
         if (!$prof_id) {
@@ -75,7 +74,7 @@ class ProfessionalSchedule extends Page implements HasForms
             
             $diaNumerico = match(strtolower(trim($diaBanco))) {
                 'segunda' => 1,
-                'terca', 'terça' => 2, // 👈 Blindado contra a falta do cedilha!
+                'terca', 'terça' => 2,
                 'quarta' => 3,
                 'quinta' => 4,
                 'sexta' => 5,
