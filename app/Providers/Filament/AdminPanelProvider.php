@@ -22,7 +22,6 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Navigation\NavigationGroup;
 use App\Filament\Widgets\BirthdayGreetings;
 use App\Filament\Widgets\BirthdayGreetingsStaff;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets;
 
 class AdminPanelProvider extends PanelProvider
