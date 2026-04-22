@@ -39,11 +39,6 @@ class RequestedService extends Model
         return $this->belongsTo(Therapy::class);
     }
 
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new \App\Models\Scopes\UnitScope);
-    }
-
     public function serviceType(): BelongsTo
     {
         return $this->belongsTo(ServiceType::class);
