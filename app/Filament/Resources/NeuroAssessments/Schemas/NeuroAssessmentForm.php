@@ -50,8 +50,8 @@ class NeuroAssessmentForm
                                 ->minValue(0)
                                 ->maxValue(10)
                                 ->readOnly()
-                                ->default(0)
-                                ->helperText('Avança de 0 a 10.'),
+                                ->default(1)
+                                ->helperText('Avança de 1 a 10.'),
                         ]),
                     ])
             ]);
