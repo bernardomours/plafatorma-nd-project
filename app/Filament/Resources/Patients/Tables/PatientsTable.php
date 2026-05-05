@@ -19,7 +19,8 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Illuminate\Database\Eloquent\Collection; // <-- IMPORTANTE: Adicionado para a ação em massa funcionar
+use App\Models\Patient;
+use Illuminate\Database\Eloquent\Collection;
 
 class PatientsTable
 {
@@ -123,7 +124,7 @@ class PatientsTable
                             ->placeholder('Detalhes sobre a alta ou saída...')
                             ->rows(3),
                     ])
-                    ->after(function (\App\Models\Patient $record, array $data) {
+                    ->after(function (Patient $record, array $data) {
                         $motivoCompleto = $data['motivo_saida'];
                         if (!empty($data['observacao'])) {
                             $motivoCompleto .= ' - ' . $data['observacao'];
@@ -139,7 +140,7 @@ class PatientsTable
                     ->label('Registrar Retorno')
                     ->modalHeading('Reativar Paciente')
                     ->icon('heroicon-o-arrow-path-rounded-square')
-                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed())
+                    ->visible(fn ($record) => $record->trashed())
                     ->form([
                         Textarea::make('motivo_retorno')
                             ->label('Motivo do Retorno')
@@ -147,7 +148,7 @@ class PatientsTable
                             ->required()
                             ->rows(3),
                     ])
-                    ->after(function (\App\Models\Patient $record, array $data) {
+                    ->after(function (Patient $record, array $data) {
                         $record->movementHistories()->create([
                             'action' => 'Retorno',
                             'reason' => $data['motivo_retorno'],
@@ -157,7 +158,7 @@ class PatientsTable
                     }),
                     
                 ForceDeleteAction::make()
-                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
+                    ->visible(fn ($record) => $record->trashed()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -197,9 +198,27 @@ class PatientsTable
                         }),
                     
                     RestoreBulkAction::make()
-                        ->visible(fn () => auth()->user()?->is_admin),
-                    ForceDeleteBulkAction::make()
-                        ->visible(fn () => auth()->user()?->is_admin),
+                        ->label('Registrar Retorno')
+                        ->modalHeading('Reativar Pacientes Selecionados')
+                        ->icon('heroicon-o-arrow-path-rounded-square')
+                        ->form([
+                            Textarea::make('motivo_retorno')
+                                ->label('Motivo do Retorno')
+                                ->placeholder('Ex: Retorno após suspensão...')
+                                ->required()
+                                ->rows(3),
+                        ])
+                        ->after(function (Collection $records, array $data) {
+                            foreach ($records as $record) {
+                                $record->movementHistories()->create([
+                                    'action' => 'Retorno',
+                                    'reason' => $data['motivo_retorno'],
+                                    'date' => now(),
+                                    'user_id' => auth()->id(),
+                                ]);
+                            }
+                        }),
+                    ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

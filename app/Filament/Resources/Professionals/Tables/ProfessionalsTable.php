@@ -10,6 +10,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
+use App\Models\Professional;
 use Filament\Actions\RestoreAction; 
 use Filament\Actions\ForceDeleteAction; 
 use Filament\Actions\BulkActionGroup;
@@ -122,48 +123,11 @@ class ProfessionalsTable
                     ->slideOver()
                     ->icon('heroicon-m-chevron-down'))
             ->actions([
-                EditAction::make()
-                    ->hidden(fn ($record) => $record->trashed()),
-                    
-                // DeleteAction::make()
-                //     ->label('Registrar Saída')
-                //     ->modalHeading('Registrar Saída do Profissional')
-                //     ->modalDescription('O profissional ficará inativo no sistema. Informe o motivo abaixo.')
-                //     ->icon('heroicon-o-arrow-right-start-on-rectangle')
-                //     ->form([
-                //         Select::make('motivo_saida')
-                //             ->label('Motivo principal')
-                //             ->options([
-                //                 'Iniciativa do profissional' => 'Iniciativa do profissional',
-                //                 'Iniciativa da empresa' => 'Iniciativa da empresa',
-                //             ])
-                //             ->required(),
-                            
-                //         Textarea::make('observacao')
-                //             ->label('Observação adicional (opcional)')
-                //             ->placeholder('Detalhes da saída do profissional...')
-                //             ->rows(3),
-                //     ])
-                //     ->after(function (\App\Models\Professional $record, array $data) {
-                //         $motivoCompleto = $data['motivo_saida'];
-                //         if (!empty($data['observacao'])) {
-                //             $motivoCompleto .= ' - ' . $data['observacao'];
-                //         }
-
-                //
-                //         $record->movementHistories()->create([
-                //             'action' => 'Saída', 
-                //             'reason' => $motivoCompleto,
-                //             'date' => now(),
-                //             'user_id' => auth()->id(),
-                //         ]);
-                //     }),
-                    
                 RestoreAction::make()
                     ->label('Registrar Retorno')
                     ->modalHeading('Reativar Profissional')
                     ->icon('heroicon-o-arrow-path-rounded-square')
-                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed())
+                    ->visible(fn ($record) => $record->trashed())
                     ->form([
                         Textarea::make('motivo_retorno')
                             ->label('Motivo do Retorno')
@@ -171,7 +135,7 @@ class ProfessionalsTable
                             ->required()
                             ->rows(3),
                     ])
-                    ->after(function (\App\Models\Professional $record, array $data) {
+                    ->after(function (Professional $record, array $data) {
                         $record->movementHistories()->create([
                             'action' => 'Retorno',
                             'reason' => $data['motivo_retorno'],
@@ -181,7 +145,8 @@ class ProfessionalsTable
                     }),
 
                 ForceDeleteAction::make()
-                    ->visible(fn ($record) => auth()->user()?->is_admin && $record->trashed()),
+                    ->visible(fn ($record) => $record->trashed()),
+
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -218,10 +183,8 @@ class ProfessionalsTable
                             }
                         }),
                         
-                    RestoreBulkAction::make()
-                        ->visible(fn () => auth()->user()?->is_admin),
-                    ForceDeleteBulkAction::make()
-                        ->visible(fn () => auth()->user()?->is_admin),
+                    RestoreBulkAction::make(),
+                    ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }
