@@ -50,8 +50,8 @@ class NeuroAssessmentsTable
             ])
             ->recordActions([
                 EditAction::make()
-                ->label('Acessar Diário') // <-- Muda o texto no card
-                ->icon('heroicon-m-folder-open') // <-- Bota um ícone de pastinha (opcional)
+                ->label('Acessar Diário')
+                ->icon('heroicon-m-folder-open')
                 ->color('info'),
             ])
             ->toolbarActions([

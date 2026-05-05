@@ -20,8 +20,8 @@ class NeuroAssessmentForm
                         Select::make('patient_id')
                             ->relationship('patient', 'name')
                             ->label('Paciente')
-                            ->searchable() // Permite pesquisar digitando o nome
-                            ->preload()    // Já carrega a lista de cara
+                            ->searchable()
+                            ->preload()
                             ->required(),
 
                         Select::make('professional_id')
@@ -34,6 +34,7 @@ class NeuroAssessmentForm
                         Grid::make(2)->schema([
                             Select::make('status')
                                 ->label('Status da Avaliação')
+                                ->hiddenOn('create')
                                 ->options([
                                     'Em andamento' => 'Em andamento',
                                     'Concluída' => 'Concluída',
@@ -50,7 +51,8 @@ class NeuroAssessmentForm
                                 ->minValue(0)
                                 ->maxValue(10)
                                 ->readOnly()
-                                ->default(1)
+                                ->default(0)
+                                ->hiddenOn('create')
                                 ->helperText('Avança de 1 a 10.'),
                         ]),
                     ])
