@@ -23,6 +23,7 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Filament\Schemas\Schema;
+use App\Filament\Resources\Appointments\Widgets\BusinessDaysChart;
 use Filament\Schemas\Components\Section;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -133,6 +134,7 @@ class AttendanceReports extends Page implements HasTable
             AppointmentsByTypeChart::class,
             AppointmentsByAgreementChart::class,
             AppointmentsByUnitChart::class,
+            BusinessDaysChart::class,
         ];
     }
 

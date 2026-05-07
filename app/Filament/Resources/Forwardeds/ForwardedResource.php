@@ -42,7 +42,7 @@ class ForwardedResource extends Resource
     public static function canViewAny(): bool
     {
         $user = auth()->user();
-        return $user->isAdmin() || $user->isManager() || $user->isAdministrative();
+        return $user->isAdmin(); # || $user->isManager() || $user->isAdministrative();
     }
 
     public static function getPages(): array
