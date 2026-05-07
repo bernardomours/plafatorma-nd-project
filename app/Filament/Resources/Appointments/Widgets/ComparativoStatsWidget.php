@@ -17,6 +17,8 @@ class ComparativoStatsWidget extends BaseWidget
     public ?string $therapy_id = null;
     public ?string $patient_id = null;
 
+    protected ?string $pollingInterval = null;
+
     #[On('atualizar-relatorio')]
     public function atualizaDadosDoGrafico($mes, $ano, $patient_id = null, $therapy_id = null, $unidades = [], $agreement_id = null)
     {
@@ -72,21 +74,19 @@ class ComparativoStatsWidget extends BaseWidget
             $query->whereHas('patient', fn($q) => $q->where('agreement_id', $this->agreement_id));
         }
 
-        $atendimentos = $query->get(['id', 'appointment_date']);
+        $atendimentos = $query->get(['id', 'appointment_date', 'session_number']);
 
         if ($atendimentos->isEmpty()) {
             return ['dia_nome' => 'Sem dados', 'total' => 0, 'media' => 0];
         }
 
-        // Agrupa os atendimentos pelo dia da semana (0=Dom, 1=Seg...)
         $agrupadoPorDiaDaSemana = $atendimentos->groupBy(function ($item) {
             return Carbon::parse($item->appointment_date)->dayOfWeek;
         });
 
-        // Conta quantos atendimentos teve em cada dia da semana
-        $contagemPorDia = $agrupadoPorDiaDaSemana->map->count();
+        // 2. Aqui mudamos de count() para sum('session_number')
+        $contagemPorDia = $agrupadoPorDiaDaSemana->map->sum('session_number');
 
-        // Acha o dia campeão
         $diaCampeaoId = $contagemPorDia->sortDesc()->keys()->first();
         $totalCampeao = $contagemPorDia->sortDesc()->first();
 
@@ -95,9 +95,10 @@ class ComparativoStatsWidget extends BaseWidget
             3 => 'Quarta-feira', 4 => 'Quinta-feira', 5 => 'Sexta-feira', 6 => 'Sábado'
         ];
 
-        // Média geral distribuida pelos dias de funcionamento
+        // 3. Atualiza a média para usar a soma também
         $diasUnicos = $atendimentos->pluck('appointment_date')->unique()->count();
-        $media = $diasUnicos > 0 ? round($atendimentos->count() / $diasUnicos, 1) : 0;
+        $totalSessoesGeral = $atendimentos->sum('session_number');
+        $media = $diasUnicos > 0 ? round($totalSessoesGeral / $diasUnicos, 1) : 0;
 
         return [
             'dia_nome' => $nomesDias[$diaCampeaoId] ?? '-',

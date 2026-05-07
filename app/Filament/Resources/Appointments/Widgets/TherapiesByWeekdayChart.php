@@ -11,7 +11,7 @@ class TherapiesByWeekdayChart extends ChartWidget
 {
     protected ?string $heading = 'Terapias por Dia da Semana (Mês Selecionado)';
     
-    // Deixa o gráfico largo para caber bem as barras
+    protected ?string $pollingInterval = null;  
     protected int | string | array $columnSpan = 'full';
 
     public ?string $mes = null;
@@ -50,14 +50,13 @@ class TherapiesByWeekdayChart extends ChartWidget
             $query->whereHas('patient', fn($q) => $q->where('agreement_id', $this->agreement_id));
         }
 
-        $atendimentos = $query->get(['id', 'appointment_date', 'therapy_id']);
+        $atendimentos = $query->get(['id', 'appointment_date', 'therapy_id', 'session_number']);
 
         $diasDaSemana = [
             1 => 'Segunda-feira', 2 => 'Terça-feira', 3 => 'Quarta-feira', 
             4 => 'Quinta-feira', 5 => 'Sexta-feira', 6 => 'Sábado'
         ];
 
-        // Agrupa pelos nomes das Terapias
         $terapias = $atendimentos->groupBy(function ($item) {
             return $item->therapy ? $item->therapy->name : 'Sem Terapia';
         });
@@ -69,11 +68,10 @@ class TherapiesByWeekdayChart extends ChartWidget
         foreach ($terapias as $nomeTerapia => $itens) {
             $dadosDaTerapia = [];
             
-            // Para cada dia da semana, conta quantos dessa terapia aconteceram
             foreach ($diasDaSemana as $diaId => $nomeDia) {
                 $quantidade = $itens->filter(function($item) use ($diaId) {
                     return Carbon::parse($item->appointment_date)->dayOfWeek === $diaId;
-                })->count();
+                })->sum('session_number');
                 
                 $dadosDaTerapia[] = $quantidade;
             }

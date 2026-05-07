@@ -13,6 +13,7 @@ class BusinessDaysChart extends ChartWidget
     protected ?string $heading = 'Comparativo: Mês Selecionado vs Mês Anterior (Dias Úteis)';
     
     protected int | string | array $columnSpan = 'full';
+    protected ?string $pollingInterval = null;
 
     public ?string $mes = null;
     public ?string $ano = null;
@@ -137,7 +138,7 @@ class BusinessDaysChart extends ChartWidget
             });
         }
 
-        $attendances = $query->selectRaw('DATE(appointment_date) as date, COUNT(appointments.id) as total')
+        $attendances = $query->selectRaw('DATE(appointment_date) as date, SUM(appointments.session_number) as total')
             ->groupBy('date')
             ->pluck('total', 'date')
             ->toArray();
