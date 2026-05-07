@@ -32,6 +32,8 @@ class AttendanceReports extends Page implements HasTable
 {
     use InteractsWithTable, InteractsWithForms;
 
+    public string $activeTab = 'geral';
+
     protected static string $resource = AppointmentResource::class;
     protected static ?string $title = 'Relatórios de Atendimento';
     protected string $view = 'filament.resources.appointments.pages.attendance-reports';
@@ -126,17 +128,17 @@ class AttendanceReports extends Page implements HasTable
         );
     }
 
-    protected function getHeaderWidgets(): array
-    {
-        return [
-            AppointmentStats::class,
-            AppointmentsPerDayChart::class,
-            AppointmentsByTypeChart::class,
-            AppointmentsByAgreementChart::class,
-            AppointmentsByUnitChart::class,
-            BusinessDaysChart::class,
-        ];
-    }
+    // protected function getHeaderWidgets(): array
+    // {
+    //     return [
+    //         AppointmentStats::class,
+    //         AppointmentsPerDayChart::class,
+    //         AppointmentsByTypeChart::class,
+    //         AppointmentsByAgreementChart::class,
+    //         AppointmentsByUnitChart::class,
+    //         BusinessDaysChart::class,
+    //     ];
+    // }
 
     protected function getHeaderWidgetsData(): array
     {
