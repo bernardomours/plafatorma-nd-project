@@ -14,19 +14,22 @@ class BusinessDaysChart extends ChartWidget
     
     protected int | string | array $columnSpan = 'full';
 
-    // 1. Crie estas propriedades para receber os filtros da página
     public ?string $mes = null;
     public ?string $ano = null;
+    public ?array $unidades = [];
+    public ?string $agreement_id = null;
+    public ?string $therapy_id = null;
+    public ?string $patient_id = null;
 
     #[On('atualizar-relatorio')]
-    public function atualizaDadosDoGrafico($mes, $ano)
+    public function atualizaDadosDoGrafico($mes, $ano, $patient_id = null, $therapy_id = null, $unidades = [], $agreement_id = null)
     {
-        // Atualiza as variáveis do gráfico com as que vieram do filtro
         $this->mes = $mes;
         $this->ano = $ano;
-        
-        // O Livewire é inteligente: assim que mudamos essas variáveis, 
-        // ele roda o getData() de novo sozinho e o gráfico pisca atualizado na tela!
+        $this->patient_id = $patient_id;
+        $this->therapy_id = $therapy_id;
+        $this->unidades = $unidades ?: [];
+        $this->agreement_id = $agreement_id;
     }
 
     protected function getData(): array
@@ -126,15 +129,34 @@ class BusinessDaysChart extends ChartWidget
         $startDate = min($businessDays);
         $endDate = max($businessDays);
 
-        $attendances = Appointment::whereBetween('appointment_date', [$startDate, $endDate])
-            ->selectRaw('DATE(appointment_date) as date, count(*) as total')
+        $query = \App\Models\Appointment::whereBetween('appointment_date', [$startDate, $endDate]);
+
+        // Aplica os filtros se a sua chefe tiver selecionado algum na tela!
+        if ($this->therapy_id) {
+            $query->where('therapy_id', $this->therapy_id);
+        }
+        if ($this->patient_id) {
+            $query->where('patient_id', $this->patient_id);
+        }
+        if (!empty($this->unidades)) {
+            $query->whereHas('patient', function ($q) {
+                $q->whereIn('unit_id', $this->unidades);
+            });
+        }
+        if ($this->agreement_id) {
+            $query->whereHas('patient', function ($q) {
+                $q->where('agreement_id', $this->agreement_id);
+            });
+        }
+
+        // Agora sim, busca o total real de atendimentos usando o COUNT (Quantidade de registros)
+        $attendances = $query->selectRaw('DATE(appointment_date) as date, COUNT(id) as total')
             ->groupBy('date')
             ->pluck('total', 'date')
             ->toArray();
 
         $dataForChart = [];
 
-        // Para cada dia útil (1, 2, 3...), pega o total. Se não teve nenhum, põe 0.
         foreach ($businessDays as $index => $dateString) {
             $dataForChart[] = $attendances[$dateString] ?? 0;
         }
