@@ -6,6 +6,7 @@ use Filament\Widgets\ChartWidget;
 use App\Models\Holiday; // Nosso model de feriados
 use Carbon\Carbon;
 use App\Models\Appointment; 
+use Livewire\Attributes\On;
 
 class BusinessDaysChart extends ChartWidget
 {
@@ -16,6 +17,17 @@ class BusinessDaysChart extends ChartWidget
     // 1. Crie estas propriedades para receber os filtros da página
     public ?string $mes = null;
     public ?string $ano = null;
+
+    #[On('atualizar-relatorio')]
+    public function atualizaDadosDoGrafico($mes, $ano)
+    {
+        // Atualiza as variáveis do gráfico com as que vieram do filtro
+        $this->mes = $mes;
+        $this->ano = $ano;
+        
+        // O Livewire é inteligente: assim que mudamos essas variáveis, 
+        // ele roda o getData() de novo sozinho e o gráfico pisca atualizado na tela!
+    }
 
     protected function getData(): array
     {
