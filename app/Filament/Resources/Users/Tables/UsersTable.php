@@ -12,6 +12,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\RestoreBulkAction; 
 use Filament\Actions\ForceDeleteBulkAction; 
 use Filament\Tables\Filters\TrashedFilter; 
+use Filament\Tables\Columns\ToggleColumn;
 
 class UsersTable
 {
@@ -50,6 +51,9 @@ class UsersTable
                         'administrative' => 'gray',
                         default          => 'gray',
                     }),
+
+                ToggleColumn::make('can_access_production')
+                    ->label('Acesso Financeiro'),
 
                 TextColumn::make('email_verified_at')
                     ->toggleable(isToggledHiddenByDefault: true)

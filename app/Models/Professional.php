@@ -47,6 +47,11 @@ class Professional extends Model
         ];
     }
 
+    public function paymentRules()
+    {
+        return $this->hasMany(ProfessionalPaymentRule::class);
+    }
+
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);

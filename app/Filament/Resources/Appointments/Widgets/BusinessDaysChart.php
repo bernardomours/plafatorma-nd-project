@@ -14,6 +14,7 @@ class BusinessDaysChart extends ChartWidget
     
     protected int | string | array $columnSpan = 'full';
     protected ?string $pollingInterval = null;
+    protected ?string $maxHeight = '500px';
 
     public ?string $mes = null;
     public ?string $ano = null;

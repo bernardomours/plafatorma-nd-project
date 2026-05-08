@@ -10,7 +10,6 @@ use Livewire\Attributes\On;
 
 class AppointmentsByUnitChart extends ChartWidget
 {
-    // Trava para não ficar atualizando sozinho e dar aquele erro GET
     protected ?string $pollingInterval = null;
     
     public ?string $mes = null;
@@ -22,6 +21,7 @@ class AppointmentsByUnitChart extends ChartWidget
 
     protected ?string $heading = 'Ranking de Atendimentos por Unidade';
     protected ?string $maxHeight = '300px';
+
 
     #[On('atualizar-relatorio')]
     public function atualizarFiltros($mes = null, $ano = null, $patient_id = null, $therapy_id = null, $unidades = [], $agreement_id = null): void 
@@ -65,7 +65,7 @@ class AppointmentsByUnitChart extends ChartWidget
                     'data' => $counts,
                     'backgroundColor' => [
                         '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6'
-                    ], // Paleta de cores moderna pra combinar com os outros
+                    ],
                 ],
             ],
             'labels' => $labels,
@@ -80,7 +80,7 @@ class AppointmentsByUnitChart extends ChartWidget
     protected function getOptions(): array
     {
         return [
-            'indexAxis' => 'y', // Deixa o gráfico deitado igual o de terapias
+            'indexAxis' => 'y',
             'plugins' => [
                 'legend' => [
                     'display' => false,

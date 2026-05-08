@@ -16,7 +16,7 @@ class AppointmentsByTypeChart extends ChartWidget
     public ?string $patient_id = null;
     public ?string $therapy_id = null;
     public array $unidades = [];
-    public ?string $agreement_id = null; // <-- NOVO: Variável do Convênio adicionada
+    public ?string $agreement_id = null;
 
     protected ?string $heading = 'Ranking de Atendimentos por Terapia';
     protected ?string $maxHeight = '300px';
@@ -29,7 +29,7 @@ class AppointmentsByTypeChart extends ChartWidget
         $this->patient_id = $patient_id;
         $this->therapy_id = $therapy_id;
         $this->unidades = $unidades;
-        $this->agreement_id = $agreement_id; // <-- Salvando o valor recebido
+        $this->agreement_id = $agreement_id;
     }
 
     protected function getData(): array
@@ -44,7 +44,6 @@ class AppointmentsByTypeChart extends ChartWidget
             ->when($this->patient_id, fn (Builder $q) => $q->where('appointments.patient_id', $this->patient_id))
             ->when($this->therapy_id, fn (Builder $q) => $q->where('appointments.therapy_id', $this->therapy_id))
             ->when(!empty($this->unidades), fn ($q) => $q->whereHas('patient', fn ($pq) => $pq->whereIn('unit_id', $this->unidades)))
-            // <-- NOVO: Aplica o filtro na query (procurando o convênio dentro do cadastro do paciente)
             ->when($this->agreement_id, fn ($q) => $q->whereHas('patient', fn ($pq) => $pq->where('agreement_id', $this->agreement_id)));
 
         $data = $query

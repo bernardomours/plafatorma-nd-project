@@ -64,7 +64,6 @@ class ComparativoStatsWidget extends BaseWidget
     {
         $query = Appointment::whereMonth('appointment_date', $mes)->whereYear('appointment_date', $ano);
 
-        // Aplica os filtros
         if ($this->therapy_id) $query->where('therapy_id', $this->therapy_id);
         if ($this->patient_id) $query->where('patient_id', $this->patient_id);
         if (!empty($this->unidades)) {
@@ -84,7 +83,6 @@ class ComparativoStatsWidget extends BaseWidget
             return Carbon::parse($item->appointment_date)->dayOfWeek;
         });
 
-        // 2. Aqui mudamos de count() para sum('session_number')
         $contagemPorDia = $agrupadoPorDiaDaSemana->map->sum('session_number');
 
         $diaCampeaoId = $contagemPorDia->sortDesc()->keys()->first();
@@ -95,7 +93,6 @@ class ComparativoStatsWidget extends BaseWidget
             3 => 'Quarta-feira', 4 => 'Quinta-feira', 5 => 'Sexta-feira', 6 => 'Sábado'
         ];
 
-        // 3. Atualiza a média para usar a soma também
         $diasUnicos = $atendimentos->pluck('appointment_date')->unique()->count();
         $totalSessoesGeral = $atendimentos->sum('session_number');
         $media = $diasUnicos > 0 ? round($totalSessoesGeral / $diasUnicos, 1) : 0;

@@ -7,6 +7,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Toggle;
 
 class UserForm
 {
@@ -53,6 +54,12 @@ class UserForm
                     ->default('administrative')
                     ->required()
                     ->native(false),
+
+                Toggle::make('can_access_production')
+                    ->label('Acesso ao Financeiro (Produção)')
+                    ->helperText('Permite que este usuário acesse a rota /producao e veja faturamentos.')
+                    ->onColor('success')
+                    ->offColor('danger'),
             ]);
     }
 }

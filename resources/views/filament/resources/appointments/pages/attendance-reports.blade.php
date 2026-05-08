@@ -57,7 +57,7 @@
             <div class="mb-8">
                 @livewire(\App\Filament\Resources\Appointments\Widgets\AppointmentsByAgreementChart::class, $this->getHeaderWidgetsData())
             </div>
-    
+            
             <div class="mb-8">
                 @livewire(\App\Filament\Resources\Appointments\Widgets\AppointmentsByUnitChart::class, $this->getHeaderWidgetsData())
             </div>
@@ -74,14 +74,14 @@
                 @livewire(\App\Filament\Resources\Appointments\Widgets\ComparativoStatsWidget::class, $this->getHeaderWidgetsData())
                 </div>
 
-                {{-- 2. O Novo Gráfico de Barras de Terapias por Dia da Semana --}}
-                <div class="mb-8">
-                    @livewire(\App\Filament\Resources\Appointments\Widgets\TherapiesByWeekdayChart::class, $this->getHeaderWidgetsData())
-                </div>
-
                 {{-- 3. O Gráfico de Acumulado (Linhas) que já tínhamos criado --}}
                 <div class="mb-8">
                     @livewire(\App\Filament\Resources\Appointments\Widgets\BusinessDaysChart::class, $this->getHeaderWidgetsData())
+                </div>
+
+                {{-- 2. O Novo Gráfico de Barras de Terapias por Dia da Semana --}}
+                <div class="mb-8">
+                    @livewire(\App\Filament\Resources\Appointments\Widgets\TherapiesByWeekdayChart::class, $this->getHeaderWidgetsData())
                 </div>
                 
                 <x-filament::section>

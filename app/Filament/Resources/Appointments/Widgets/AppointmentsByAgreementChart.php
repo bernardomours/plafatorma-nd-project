@@ -37,7 +37,6 @@ class AppointmentsByAgreementChart extends ChartWidget
         $mesFiltrado = $this->mes ?: date('m');
         $anoFiltrado = $this->ano ?: date('Y');
 
-        // Para pegar o nome do convênio, precisamos fazer JOIN com pacientes e depois com agreements
         $query = Appointment::query()
             ->join('patients', 'appointments.patient_id', '=', 'patients.id')
             ->join('agreements', 'patients.agreement_id', '=', 'agreements.id')
@@ -65,7 +64,7 @@ class AppointmentsByAgreementChart extends ChartWidget
                     'backgroundColor' => [
                         '#FF9F40', '#FFCD56', '#4BC0C0', '#36A2EB', 
                         '#9966FF', '#FF6384', '#C9CBCF'
-                    ], // Cores diferentes para destacar do gráfico de terapias
+                    ],
                 ],
             ],
             'labels' => $labels,
@@ -74,13 +73,13 @@ class AppointmentsByAgreementChart extends ChartWidget
 
     protected function getType(): string
     {
-        return 'bar'; // Gráfico de barras
+        return 'bar';
     }
 
     protected function getOptions(): array
     {
         return [
-            'indexAxis' => 'y', // Deixa as barras deitadas (horizontal)
+            'indexAxis' => 'y',
             'plugins' => [
                 'legend' => [
                     'display' => false,

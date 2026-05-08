@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -25,6 +27,7 @@ class User extends Authenticatable
         'unit_id',
         'birth_date',
         'role',
+        'can_access_production',
     ];
 
     /**
@@ -79,5 +82,14 @@ class User extends Authenticatable
     public function isSupervisor(): bool
     {
         return $this->role === 'supervisor';
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'producao') {
+            return (bool) $this->can_access_production;
+        }
+
+        return true; 
     }
 }
