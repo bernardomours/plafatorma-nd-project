@@ -9,6 +9,8 @@ use App\Models\Unit;
 use Filament\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Actions\Action;
+use Illuminate\Contracts\View\View;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Table;
@@ -19,7 +21,7 @@ use Carbon\Carbon;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Select;
 
-class FechamentoMensal extends Page implements HasTable
+class FechamentoMensal extends Page implements HasTable, HasForms
 {
     use InteractsWithTable, InteractsWithForms;
 
@@ -29,7 +31,7 @@ class FechamentoMensal extends Page implements HasTable
     protected string $view = 'filament.producao.pages.fechamento-mensal';
 
     public ?array $data = [];
-    protected array $cacheProducao = []; // Nosso cache para a página não ficar lenta!
+    protected array $cacheProducao = [];
 
     public function mount(): void
     {
@@ -72,7 +74,7 @@ class FechamentoMensal extends Page implements HasTable
 
                         Select::make('unidades')
                             ->label('Unidade(s)')
-                            ->options(Unit::pluck('name', 'id')) // Mude para o nome correto do seu Model se não for Unit
+                            ->options(Unit::pluck('name', 'id'))
                             ->multiple()
                             ->searchable()
                             ->preload(),
@@ -84,7 +86,6 @@ class FechamentoMensal extends Page implements HasTable
 
     public function aplicarFiltros()
     {
-        // Limpa o cache ao pesquisar de novo para forçar o recálculo
         $this->cacheProducao = []; 
     }
 
@@ -96,7 +97,6 @@ class FechamentoMensal extends Page implements HasTable
         $terapiaId = $this->data['therapy_id'] ?? null;
         $unidades = $this->data['unidades'] ?? [];
 
-        // Monta a busca dos profissionais que atendem aos filtros
         $query = Professional::query()
             ->when($profId, fn($q) => $q->where('id', $profId))
             ->whereHas('appointments', function ($q) use ($mesFiltrado, $anoFiltrado, $terapiaId, $unidades) {
@@ -137,15 +137,45 @@ class FechamentoMensal extends Page implements HasTable
                     ->weight('bold')
                     ->color('success')
                     ->state(fn (Professional $record) => $this->getResumoProducao($record)['valor_total']),
+            ])
+            ->actions([
+                Action::make('verExtrato')
+                    ->label('Ver Extrato')
+                    ->icon('heroicon-m-document-text')
+                    ->color('gray')
+                    ->modalHeading(fn (Professional $record) => 'Extrato: ' . $record->name)
+                    ->modalWidth('4xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Fechar')
+                    ->modalContent(function (Professional $record) use ($mesFiltrado, $anoFiltrado, $terapiaId, $unidades) {
+                        
+                        $detalhesQuery = Appointment::with(['patient', 'therapy'])
+                            ->where('professional_id', $record->id)
+                            ->whereMonth('appointment_date', $mesFiltrado)
+                            ->whereYear('appointment_date', $anoFiltrado);
+
+                        if ($terapiaId) {
+                            $detalhesQuery->where('therapy_id', $terapiaId);
+                        }
+                        if (!empty($unidades)) {
+                            $detalhesQuery->whereHas('patient', fn($q) => $q->whereIn('unit_id', $unidades));
+                        }
+
+                        $detalhes = $detalhesQuery->orderBy('appointment_date')->get();
+
+                        return view('filament.producao.pages.extrato-detalhado', [
+                            'profissional' => $record,
+                            'atendimentos' => $detalhes,
+                            'mes' => $mesFiltrado,
+                            'ano' => $anoFiltrado
+                        ]);
+                    }),
             ]);
     }
 
-    /**
-     * O MOTOR MATEMÁTICO TURBINADO (Retorna Valor, Sessões e a Regra)
-     */
+
     private function getResumoProducao(Professional $professional): array
     {
-        // Se já calculou esse profissional agora pouco, não vai no banco de novo (Performance!)
         if (isset($this->cacheProducao[$professional->id])) {
             return $this->cacheProducao[$professional->id];
         }
@@ -157,9 +187,10 @@ class FechamentoMensal extends Page implements HasTable
 
         $query = Appointment::where('professional_id', $professional->id)
             ->whereMonth('appointment_date', $mes)
-            ->whereYear('appointment_date', $ano);
+            ->whereYear('appointment_date', $ano)
+            ->whereNotNull('check_in')
+            ->whereNotNull('check_out');
 
-        // Aplica os filtros nos atendimentos do profissional
         if ($terapiaId) $query->where('therapy_id', $terapiaId);
         if (!empty($unidades)) {
             $query->whereHas('patient', fn($q) => $q->whereIn('unit_id', $unidades));
@@ -171,7 +202,7 @@ class FechamentoMensal extends Page implements HasTable
         $valorTotal = 0;
         $totalSessoes = 0;
         $diasTrabalhadosFono = []; 
-        $valoresAplicados = []; // Guarda os valores para sabermos se ele ganha o mesmo em todas
+        $valoresAplicados = [];
 
         foreach ($atendimentos as $atendimento) {
             $paciente = clone $atendimento->patient; 
@@ -183,11 +214,10 @@ class FechamentoMensal extends Page implements HasTable
                            ?? $regras->whereNull('agreement_id')->whereNull('therapy_id')->first();
 
             if ($regraAplicavel) {
-                // Guarda o valor que aplicamos para ele
                 $valoresAplicados[(string)$regraAplicavel->amount] = true;
                 
                 $quantidade = $atendimento->session_number ?? 0;
-                $totalSessoes += $quantidade; // Soma as sessões pro painel!
+                $totalSessoes += $quantidade;
 
                 if ($regraAplicavel->payment_type === 'por_dia') {
                     $diaString = Carbon::parse($atendimento->appointment_date)->format('Y-m-d');
@@ -202,7 +232,6 @@ class FechamentoMensal extends Page implements HasTable
             $valorTotal += array_sum($diasTrabalhadosFono);
         }
 
-        // Descobre se mostra o valor ou "Variado"
         $displayRegra = 'Sem Regra';
         if (count($valoresAplicados) > 1) {
             $displayRegra = 'Valores Variados';
@@ -216,14 +245,11 @@ class FechamentoMensal extends Page implements HasTable
             'valor_regra' => $displayRegra,
         ];
 
-        // Salva no cache
         $this->cacheProducao[$professional->id] = $resultado;
         return $resultado;
     }
 
-    /**
-     * Função para os Cards do Topo
-     */
+
     public function getTotaisGerais(): array
     {
         $mesFiltrado = $this->data['mes'] ?? date('m');

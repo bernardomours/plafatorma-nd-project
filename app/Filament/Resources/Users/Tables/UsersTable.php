@@ -53,7 +53,7 @@ class UsersTable
                     }),
 
                 ToggleColumn::make('can_access_production')
-                    ->label('Acesso Financeiro'),
+                    ->label('Acesso Produção'),
 
                 TextColumn::make('email_verified_at')
                     ->toggleable(isToggledHiddenByDefault: true)
