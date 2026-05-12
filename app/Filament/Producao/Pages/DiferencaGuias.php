@@ -229,6 +229,11 @@ class DiferencaGuias extends Page implements HasTable
         return $table
             ->query($query)
             ->columns([
+                TextColumn::make('request_date')
+                    ->label('Data Solicitação')
+                    ->date('d/m/Y')
+                    ->sortable(),
+                    
                 TextColumn::make('guide')
                     ->label('Guia')
                     ->searchable()
@@ -250,11 +255,6 @@ class DiferencaGuias extends Page implements HasTable
                 // TextColumn::make('professional_name')
                 //     ->label('Profissional Executante')
                 //     ->searchable(),
-
-                TextColumn::make('request_date')
-                    ->label('Data Solicitação')
-                    ->date('d/m/Y')
-                    ->sortable(),
             ])
             ->recordUrl(null)
             ->recordAction(null)
