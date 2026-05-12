@@ -233,7 +233,7 @@ class DiferencaGuias extends Page implements HasTable
                     ->label('Data Solicitação')
                     ->date('d/m/Y')
                     ->sortable(),
-                    
+
                 TextColumn::make('guide')
                     ->label('Guia')
                     ->searchable()
@@ -261,5 +261,18 @@ class DiferencaGuias extends Page implements HasTable
             ->emptyStateHeading('Nenhuma diferença encontrada!')
             ->emptyStateDescription('Todas as guias não apresentadas constam na rastreabilidade.')
             ->emptyStateIcon('heroicon-o-check-badge');
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Producao\Widgets\DiferencaGuiasStats::class,
+            \App\Filament\Producao\Widgets\DiferencaGuiasProcedimentosChart::class,
+        ];
+    }
+
+    public function getHeaderWidgetsColumns(): int | array
+    {
+        return 2;
     }
 }
