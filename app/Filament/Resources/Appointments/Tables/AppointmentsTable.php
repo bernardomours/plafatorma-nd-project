@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Actions\Action;
-use Filament\Forms\Components\Grid;
+use Filament\Schemas\Components\Grid;
 
 class AppointmentsTable
 {
@@ -95,9 +95,12 @@ class AppointmentsTable
                     ->multiple()
                     ->label('Unidade'),
                 Filter::make('appointment_date')
+                    ->columnSpan(2)
                     ->form([
-                        DatePicker::make('date_from')->label('Data Início'),
-                        DatePicker::make('date_until')->label('Data Fim'),
+                        Grid::make(2)->schema([
+                            DatePicker::make('date_from')->label('Data Início'),
+                            DatePicker::make('date_until')->label('Data Fim'),
+                        ]),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -110,7 +113,7 @@ class AppointmentsTable
                                 fn (Builder $query, $date): Builder => $query->whereDate('appointment_date', '<=', $date),
                             );
                     })
-            ], layout: FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContent)
             ->filtersTriggerAction(
                 fn ($action) => $action
                     ->button()
