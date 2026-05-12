@@ -247,9 +247,9 @@ class DiferencaGuias extends Page implements HasTable
                     ->searchable()
                     ->wrap(),
 
-                TextColumn::make('professional_name')
-                    ->label('Profissional Executante')
-                    ->searchable(),
+                // TextColumn::make('professional_name')
+                //     ->label('Profissional Executante')
+                //     ->searchable(),
 
                 TextColumn::make('request_date')
                     ->label('Data Solicitação')
