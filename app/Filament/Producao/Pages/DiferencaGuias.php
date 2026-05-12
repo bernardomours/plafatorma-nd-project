@@ -19,6 +19,14 @@ use App\Models\Patient;
 use App\Models\Professional;
 use BackedEnum;
 use UnitEnum;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Enums\FiltersLayout;
 
 class DiferencaGuias extends Page implements HasTable
 {
@@ -39,7 +47,7 @@ class DiferencaGuias extends Page implements HasTable
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('primary')
                 ->form([
-                    \Filament\Forms\Components\Select::make('unidade_relatorio')
+                    Select::make('unidade_relatorio')
                         ->label('Unidade do Relatório')
                         ->options([
                             'Mossoró' => 'Mossoró (Limeira e Carvalho)',
@@ -47,7 +55,7 @@ class DiferencaGuias extends Page implements HasTable
                         ])
                         ->required(),
                         
-                    \Filament\Forms\Components\FileUpload::make('arquivo_csv')
+                    FileUpload::make('arquivo_csv')
                         ->label('CSV de Guias Não Apresentadas')
                         ->disk('local')
                         ->directory('imports')
@@ -65,10 +73,8 @@ class DiferencaGuias extends Page implements HasTable
                     $numeroLinha = 1;
                     $errosDetalhados = [];
 
-                    // Carrega pacientes com seus relacionamentos para o filtro
-                    $todosPacientes = \App\Models\Patient::with(['unit', 'agreement'])->get();
+                    $todosPacientes = Patient::with(['unit', 'agreement'])->get();
 
-                    // Filtra pacientes apenas da unidade selecionada
                     $pacientesFiltrados = $todosPacientes->filter(function($p) use ($unidadeSelecionada) {
                         $nomeConvenio = $p->agreement->name ?? ''; 
                         $nomeUnidade = $p->unit->city ?? $p->unit->name ?? ''; 
@@ -143,20 +149,19 @@ class DiferencaGuias extends Page implements HasTable
                         
                         $patient = ($melhorPaciente && $maiorSimilaridadePaciente >= 80) ? $melhorPaciente : null;
 
-                        // Adicionando um aviso (não bloqueante) se não achar o paciente, mas salva a guia mesmo assim
                         if (!$patient) {
                             $motivosErroLinha[] = "Paciente '{$patientNameCsv}' não encontrado (Guia salva sem vínculo)";
                         }
 
                         try {
-                            \App\Models\UnpresentedGuide::updateOrCreate(
+                            UnpresentedGuide::updateOrCreate(
                                 ['guide' => $numeroGuia],
                                 [
                                     'procedure' => $procedimentoBruto,
                                     'patient_name' => $patientNameCsv,
-                                    'professional_name' => null, // Omitido conforme a regra de não ter profissional no CSV
+                                    'professional_name' => null,
                                     'request_date' => $requestDate,
-                                    'patient_id' => $patient->id ?? null, // Salva nulo se não achou, mas importa a guia
+                                    'patient_id' => $patient->id ?? null,
                                     'professional_id' => null,
                                     'therapy_id' => $therapy->id,
                                 ]
@@ -174,7 +179,6 @@ class DiferencaGuias extends Page implements HasTable
 
                     fclose($file);
 
-                    // FEEDBACK IGUAL AO SEU CÓDIGO DE INSPIRAÇÃO
                     if (count($errosDetalhados) > 0) {
                         $aviso = "Importamos <strong>{$importados}</strong> guias válidas para <strong>{$unidadeSelecionada}</strong>.<br><br><strong>Avisos/Erros encontrados:</strong><br>";
                         
@@ -256,6 +260,58 @@ class DiferencaGuias extends Page implements HasTable
                 //     ->label('Profissional Executante')
                 //     ->searchable(),
             ])
+            ->filters([
+                SelectFilter::make('procedure')
+                    ->label('Procedimento')
+                    ->options(fn () => \App\Models\UnpresentedGuide::select('procedure')
+                        ->whereNotNull('procedure')
+                        ->distinct()
+                        ->pluck('procedure', 'procedure')
+                        ->toArray()
+                    )
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('unit')
+                    ->relationship('patient.unit', 'city') 
+                    ->label('Prestador')
+                    ->searchable()
+                    ->preload(),
+
+                Filter::make('guide_filter')
+                    ->label('Guia')
+                    ->form([
+                        TextInput::make('guide_number')
+                            ->label('Número da Guia')
+                            ->placeholder('Ex: 18080557'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['guide_number'],
+                            fn (Builder $query, $guide): Builder => $query->where('guide', 'like', "%{$guide}%"),
+                        );
+                    }),
+
+                Filter::make('request_date')
+                    ->columnSpan(2)
+                    ->form([
+                        Grid::make(2)->schema([
+                            DatePicker::make('date_from')->label('Data Início'),
+                            DatePicker::make('date_until')->label('Data Fim'),
+                        ]),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['date_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('request_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['date_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('request_date', '<=', $date),
+                            );
+                    })
+            ], layout: FiltersLayout::AboveContent)
             ->recordUrl(null)
             ->recordAction(null)
             ->emptyStateHeading('Nenhuma diferença encontrada!')
