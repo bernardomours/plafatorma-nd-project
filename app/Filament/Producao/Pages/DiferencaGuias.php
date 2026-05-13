@@ -27,6 +27,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Enums\FiltersLayout;
+use App\Filament\Producao\Clusters\Conciliacao;
 
 class DiferencaGuias extends Page implements HasTable
 {
@@ -37,6 +38,7 @@ class DiferencaGuias extends Page implements HasTable
     protected static ?string $title = 'Diferença de Guias';
     protected static ?string $navigationLabel = 'Diferença de Guias';
     //protected static string|UnitEnum|null $navigationGroup = 'Frequência';
+    protected static ?string $cluster = Conciliacao::class;
     protected string $view = 'filament.producao.pages.diferenca-guias';
 
     protected function getHeaderActions(): array
@@ -123,9 +125,8 @@ class DiferencaGuias extends Page implements HasTable
                         elseif (str_contains($procedimentoBruto, 'TO -') || str_contains($procedimentoBruto, 'TERAPIA OCUPACIONAL')) $terapiaNome = 'TERAPIA OCUPACIONAL';
                         elseif (str_contains($procedimentoBruto, 'PSICO')) $terapiaNome = 'PSICOTERAPIA';
                         
-                        $therapy = \App\Models\Therapy::firstOrCreate(['name' => $terapiaNome]);
+                        $therapy = Therapy::firstOrCreate(['name' => $terapiaNome]);
 
-                        // BUSCA INTELIGENTE DE PACIENTE
                         $patientSlugCsv = \Illuminate\Support\Str::slug($patientNameCsv);
                         $melhorPaciente = null; 
                         $maiorSimilaridadePaciente = 0;

@@ -38,6 +38,7 @@ class ProducaoPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Producao/Resources'), for: 'App\Filament\Producao\Resources')
             ->discoverPages(in: app_path('Filament/Producao/Pages'), for: 'App\Filament\Producao\Pages')
+            ->discoverClusters(in: app_path('Filament/Producao/Clusters'), for: 'App\\Filament\\Producao\\Clusters')
             ->pages([
                 Dashboard::class,
             ])

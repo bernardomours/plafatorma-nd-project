@@ -11,6 +11,7 @@ class DiferencaGuiasProcedimentosChart extends ChartWidget
     protected ?string $heading = 'Quantidade de Guias Pendentes por Procedimento';
     
     protected ?string $pollingInterval = null;
+    protected static bool $isDiscovered = false;
     protected int | string | array $columnSpan = 'full';
     protected ?string $maxHeight = '250px';
 

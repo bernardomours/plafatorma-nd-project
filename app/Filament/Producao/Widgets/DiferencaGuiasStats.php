@@ -11,6 +11,7 @@ class DiferencaGuiasStats extends BaseWidget
 {
     protected int | string | array $columnSpan = 'full'; 
     protected ?string $pollingInterval = null;
+    protected static bool $isDiscovered = false;
 
     protected function getStats(): array
     {
